@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Test output
+coverage/
+
+# Local environment files
+.env*
+!.env.example
+
+# Vercel
+.vercel/
+
+# Logs and local tooling
+*.log
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
