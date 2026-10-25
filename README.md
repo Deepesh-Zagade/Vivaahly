@@ -30,4 +30,12 @@ corepack pnpm build
 - `src/components` contains shared UI primitives and layouts.
 - `src/app/globals.css` contains the minimal global styling foundation. Shared components and additional style organization will be introduced only when approved designs require them.
 
-The first implementation slice after scaffold verification is the Vivaahly marketing landing page. Its final UI and visual system will be implemented only after the approved design context is available.
+## Marketing homepage
+
+The complete responsive homepage lives in `src/app/(marketing)`. Its private `_components` directory contains the header, footer, and 13 static sections adapted from the approved Stitch design. Only the mobile navigation requires client-side state.
+
+The scoped design tokens and responsive refinements live in `marketing.css`, imported through `globals.css` so Tailwind can generate the matching utilities. EB Garamond and Plus Jakarta Sans are self-hosted by `next/font`; the first build requires network access to fetch the fonts. Fixed assets live in `public/brand`.
+
+Product previews use illustrative data. Start planning, Sign in, Privacy, and Terms intentionally have no action until their features are implemented. In-page navigation and the mobile menu work; Escape closes the menu. No database, authentication, or external provider setup is required to view the homepage.
+
+The source design is Stitch project `13173363454773118986`, homepage screen `5a36094f39e44bb383114a0c7599e023`. Copy about food preferences, accommodation, transport, budgeting, and real-time synchronization was adjusted to match the documented MVP scope.

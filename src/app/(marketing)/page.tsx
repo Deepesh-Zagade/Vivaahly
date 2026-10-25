@@ -1,34 +1,52 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { SiteHeader } from "./_components/site-header";
+import { SiteFooter } from "./_components/site-footer";
+import { HeroSection } from "./_components/sections/hero";
+import { CoordinationSection } from "./_components/sections/coordination";
+import { WorkspaceSection } from "./_components/sections/workspace";
+import { CeremoniesSection } from "./_components/sections/ceremonies";
+import { GuestsSection } from "./_components/sections/guests";
+import { TasksSection } from "./_components/sections/tasks";
+import { ExpensesSection } from "./_components/sections/expenses";
+import { GuestExperienceSection } from "./_components/sections/guest-experience";
+import { CultureSection } from "./_components/sections/culture";
+import { MediaSection } from "./_components/sections/media";
+import { PrivacySection } from "./_components/sections/privacy";
+import { OverviewSection } from "./_components/sections/overview";
+import { ClosingSection } from "./_components/sections/closing";
+
+export const metadata: Metadata = {
+  title: { absolute: "Vivaahly — Your wedding, beautifully organized" },
+  description:
+    "Bring wedding events, guests, RSVPs, family tasks, vendors, expenses, and shared memories into one calm workspace. Built for Indian weddings.",
+};
 
 export default function MarketingPage() {
   return (
-    <main className="min-h-screen px-6 py-12 sm:px-10">
-      <div className="mx-auto max-w-5xl">
-        <header className="flex items-center justify-between gap-6 border-b border-neutral-200 pb-6">
-          <Link href="/" className="text-xl font-semibold no-underline">
-            Vivaahly
-          </Link>
-          <Link href="/app" className="text-sm font-medium">
-            Organizer workspace
-          </Link>
-        </header>
-
-        <section className="py-20 sm:py-28">
-          <p className="text-sm font-medium text-neutral-600">Marketing landing page</p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-            Vivaahly landing page foundation
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-neutral-600">
-            This route is reserved for the approved Vivaahly landing-page design. Final content,
-            typography, colors, imagery, and components will be implemented from the supplied design
-            context.
-          </p>
-        </section>
-
-        <footer className="border-t border-neutral-200 pt-6 text-sm text-neutral-600">
-          Vivaahly scaffold
-        </footer>
-      </div>
-    </main>
+    <div id="top" className="marketing-page">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-6 focus:py-3 focus:text-white"
+      >
+        Skip to content
+      </a>
+      <SiteHeader />
+      <main id="main-content" tabIndex={-1}>
+        <HeroSection />
+        <CoordinationSection />
+        <WorkspaceSection />
+        <CeremoniesSection />
+        <GuestsSection />
+        <TasksSection />
+        <ExpensesSection />
+        <GuestExperienceSection />
+        <CultureSection />
+        <MediaSection />
+        <PrivacySection />
+        <OverviewSection />
+        <ClosingSection />
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

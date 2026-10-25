@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./(marketing)/marketing.css";
 
 * {
   box-sizing: border-box;
