@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Brand } from "./brand";
 
 const navigation = [
@@ -53,20 +54,18 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-3 sm:gap-5">
-          <button
-            type="button"
-            aria-disabled="true"
+          <Link
+            href="/sign-in"
             className="hidden text-body-sm text-on-surface-variant sm:block"
           >
             Sign in
-          </button>
-          <button
-            type="button"
-            aria-disabled="true"
+          </Link>
+          <Link
+            href="/sign-up"
             className="hidden min-[360px]:block whitespace-nowrap rounded-full bg-primary px-3 py-2.5 text-[12px] font-semibold text-on-primary sm:px-4 sm:text-label-md"
           >
             Start planning
-          </button>
+          </Link>
           <button
             ref={toggle}
             type="button"
@@ -109,13 +108,20 @@ export function SiteHeader() {
             {label}
           </a>
         ))}
-        <button
-          type="button"
-          aria-disabled="true"
-          className="px-3 py-3 text-label-md text-primary"
+        <Link
+          href="/sign-in"
+          onClick={() => setOpen(false)}
+          className="block rounded-lg px-3 py-3 text-label-md text-primary hover:bg-surface-container"
         >
           Sign in
-        </button>
+        </Link>
+        <Link
+          href="/sign-up"
+          onClick={() => setOpen(false)}
+          className="mt-2 block rounded-lg bg-primary px-3 py-3 text-center text-label-md font-semibold text-on-primary"
+        >
+          Start planning
+        </Link>
       </nav>
     </header>
   );

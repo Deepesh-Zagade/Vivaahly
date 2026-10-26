@@ -10,10 +10,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-a {
-  color: inherit;
-}
-
 button,
 input,
 textarea,
@@ -30,4 +26,41 @@ select {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.auth-page {
+  min-height: 100svh;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-interface), Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.auth-page :where(a, button, input):focus-visible {
+  outline: 3px solid #a65c76;
+  outline-offset: 3px;
+}
+
+.auth-ambient::before,
+.auth-ambient::after {
+  position: absolute;
+  z-index: 0;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 9999px;
+  content: "";
+  filter: blur(72px);
+  pointer-events: none;
+}
+
+.auth-ambient::before {
+  top: -10rem;
+  left: -10rem;
+  background: rgb(255 180 161 / 16%);
+}
+
+.auth-ambient::after {
+  right: -10rem;
+  bottom: 10%;
+  background: rgb(255 217 226 / 38%);
 }

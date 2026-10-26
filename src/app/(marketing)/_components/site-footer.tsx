@@ -1,4 +1,5 @@
 import { Brand } from "./brand";
+import Link from "next/link";
 
 export function SiteFooter() {
   return (
@@ -21,7 +22,7 @@ export function SiteFooter() {
             <a href="#how-it-works" className="py-2 hover:text-white">
               How it works
             </a>
-            {["Privacy", "Terms", "Sign in"].map((label) => (
+            {["Privacy", "Terms"].map((label) => (
               <button
                 key={label}
                 type="button"
@@ -31,6 +32,9 @@ export function SiteFooter() {
                 {label}
               </button>
             ))}
+            <Link href="/sign-in" className="py-2 hover:text-white">
+              Sign in
+            </Link>
           </nav>
         </div>
         <div className="flex flex-col justify-between gap-3 pt-6 text-body-sm text-inverse-on-surface/75 sm:flex-row">

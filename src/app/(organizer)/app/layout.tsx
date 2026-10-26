@@ -1,21 +1,39 @@
-import Link from "next/link";
+import { EB_Garamond, Plus_Jakarta_Sans } from "next/font/google";
+import { redirect } from "next/navigation";
+import { LogoutButton } from "@/app/(organizer)/app/_components/logout-button";
+import { Brand } from "@/components/brand";
+import { getCurrentOrganizer } from "@/modules/auth/auth.server";
 
-export default function OrganizerLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+const editorial = EB_Garamond({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-editorial",
+});
+
+const interfaceFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-interface",
+});
+
+export default async function OrganizerLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  const organizer = await getCurrentOrganizer();
+
+  if (!organizer) redirect("/sign-in");
+
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-neutral-200 px-6 py-5 sm:px-10">
+    <div
+      className={`${editorial.variable} ${interfaceFont.variable} min-h-screen bg-surface font-body-md text-on-surface`}
+    >
+      <header className="border-b border-surface-container-highest bg-surface-container-lowest px-margin-mobile py-4 md:px-margin">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6">
-          <Link href="/" className="text-xl font-semibold no-underline">
-            Vivaahly
-          </Link>
-          <nav aria-label="Organizer navigation">
-            <Link href="/" className="text-sm font-medium">
-              Back to home
-            </Link>
-          </nav>
+          <Brand />
+          <LogoutButton />
         </div>
       </header>
-      {children}
+      <div>{children}</div>
     </div>
   );
 }

@@ -45,3 +45,11 @@ export function validationError(
 export function conflictError(message: string, details?: Record<string, unknown>) {
   return new ApplicationError({ code: "CONFLICT", status: 409, message, details });
 }
+
+export function unauthenticatedError(message = "Authentication is required.") {
+  return new ApplicationError({ code: "UNAUTHENTICATED", status: 401, message });
+}
+
+export function forbiddenError(message = "You do not have permission to perform this action.") {
+  return new ApplicationError({ code: "FORBIDDEN", status: 403, message });
+}

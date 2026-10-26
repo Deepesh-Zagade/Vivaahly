@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 // Static product illustration adapted from the approved Stitch homepage.
 export function ClosingSection() {
   return (
@@ -22,13 +24,12 @@ export function ClosingSection() {
             one calm workspace with Vivaahly.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-            <button
-              type="button"
-              aria-disabled="true"
+            <Link
+              href="/sign-up"
               className="w-full sm:w-auto inline-flex items-center justify-center bg-surface-container-lowest text-primary hover:bg-white font-label-md text-label-md px-8 py-4 rounded-xl transition-all shadow-md font-semibold"
             >
               Start planning your wedding
-            </button>
+            </Link>
             <a
               className="w-full sm:w-auto inline-flex items-center justify-center border border-on-primary/30 text-on-primary hover:bg-on-primary/10 font-label-md text-label-md px-7 py-4 rounded-xl transition-all"
               href="#guest-experience"
