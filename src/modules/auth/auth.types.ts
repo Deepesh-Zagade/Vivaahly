@@ -1,3 +1,5 @@
+import type { OrganizerMembershipContext } from "@/modules/wedding/wedding.types";
+
 export type OrganizerUser = {
   id: string;
   name: string;
@@ -20,7 +22,7 @@ export type OrganizerSession = {
 
 export type AuthenticatedOrganizer = {
   user: OrganizerUser;
-  membership: null;
+  membership: OrganizerMembershipContext | null;
 };
 
 export type OrganizerUserDto = {

@@ -1,4 +1,5 @@
 import { ensureAuthIndexes } from "../src/modules/auth/repositories/mongodb-auth.repository";
+import { ensureWeddingIndexes } from "../src/modules/wedding/repositories/mongodb-wedding.repository";
 import {
   closeMongoClient,
   getMongoDatabase,
@@ -6,8 +7,8 @@ import {
 
 async function main() {
   const database = await getMongoDatabase();
-  await ensureAuthIndexes(database);
-  console.info("Vivaahly authentication indexes are ready.");
+  await Promise.all([ensureAuthIndexes(database), ensureWeddingIndexes(database)]);
+  console.info("Vivaahly authentication and wedding indexes are ready.");
 }
 
 async function run() {
@@ -19,6 +20,6 @@ async function run() {
 }
 
 run().catch((error: unknown) => {
-  console.error("Unable to prepare Vivaahly authentication indexes.", error);
+  console.error("Unable to prepare Vivaahly database indexes.", error);
   process.exitCode = 1;
 });

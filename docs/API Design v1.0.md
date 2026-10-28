@@ -262,6 +262,7 @@ Internal stack traces, database errors, provider secrets, and bearer tokens must
 | `NOT_FOUND` | 404 | Tenant-scoped resource not found |
 | `CONFLICT` | 409 | State conflict/duplicate/invariant violation |
 | `RATE_LIMITED` | 429 | Too many requests |
+| `SERVICE_UNAVAILABLE` | 503 | Required database connectivity is temporarily unavailable |
 | `EXTERNAL_SERVICE_ERROR` | 502/503 | R2/Resend/provider problem |
 | `INTERNAL_ERROR` | 500 | Unexpected server failure |
 
@@ -286,6 +287,8 @@ For cross-tenant object probing, prefer a generic `404 NOT_FOUND` when possible 
 | `429` | Rate limited |
 | `500` | Unexpected application error |
 | `502/503` | Temporary provider dependency failure |
+
+MongoDB server-selection and network failures return `503 SERVICE_UNAVAILABLE` with a user-safe message. Responses and logs must not expose replica-set hosts, connection strings, credentials, session tokens, or raw driver errors.
 
 V1 should choose one consistent policy for semantic validation. This document recommends using `400` for Zod and domain validation unless `409` better represents the conflict.
 
@@ -896,9 +899,20 @@ Request example:
     "mr": "दीपेश आणि प्रिया"
   },
   "mainWeddingDate": "2027-02-14",
-  "timezone": "Asia/Kolkata"
+  "timezone": "Asia/Kolkata",
+  "primaryVenue": {
+    "city": {
+      "en": "Pune, Maharashtra"
+    }
+  }
 }
 ```
+
+Initial onboarding captures the primary wedding city or location so the
+workspace can display meaningful location context immediately. Full venue
+name, bilingual address, and map URL remain part of later wedding setup.
+English is required for `primaryVenue.city`; Marathi may be added later and
+uses the normal localized-content fallback rule.
 
 The service transaction:
 

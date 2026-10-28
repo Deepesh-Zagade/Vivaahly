@@ -25,15 +25,28 @@ export default async function OrganizerLayout({
 
   return (
     <div
-      className={`${editorial.variable} ${interfaceFont.variable} min-h-screen bg-surface font-body-md text-on-surface`}
+      className={`${editorial.variable} ${interfaceFont.variable} organizer-page flex min-h-screen flex-col bg-surface font-body-md text-on-surface`}
     >
-      <header className="border-b border-surface-container-highest bg-surface-container-lowest px-margin-mobile py-4 md:px-margin">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-6">
-          <Brand />
-          <LogoutButton />
+      <header className="sticky top-0 z-40 border-b border-surface-container-highest/80 bg-surface/95 px-margin-mobile py-4 backdrop-blur-md md:px-margin">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+          <Brand href="/app" />
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <div className="hidden min-w-0 items-center gap-2 sm:flex">
+              <span className="max-w-48 truncate text-label-md font-semibold text-on-surface">
+                {organizer.user.name}
+              </span>
+              {organizer.membership ? (
+                <span className="rounded-full bg-primary-fixed px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-on-primary-fixed">
+                  {organizer.membership.role}
+                </span>
+              ) : null}
+            </div>
+            <span className="hidden h-6 w-px bg-outline-variant sm:block" />
+            <LogoutButton />
+          </div>
         </div>
       </header>
-      <div>{children}</div>
+      <div className="flex flex-1 flex-col">{children}</div>
     </div>
   );
 }

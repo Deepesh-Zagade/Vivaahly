@@ -11,7 +11,11 @@ const navigation = [
   ["Media Hub", "#media-hub"],
 ] as const;
 
-export function SiteHeader() {
+export function SiteHeader({
+  hasOrganizerSession,
+}: {
+  hasOrganizerSession: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const toggle = useRef<HTMLButtonElement>(null);
 
@@ -54,18 +58,29 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-3 sm:gap-5">
-          <Link
-            href="/sign-in"
-            className="hidden text-body-sm text-on-surface-variant sm:block"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/sign-up"
-            className="hidden min-[360px]:block whitespace-nowrap rounded-full bg-primary px-3 py-2.5 text-[12px] font-semibold text-on-primary sm:px-4 sm:text-label-md"
-          >
-            Start planning
-          </Link>
+          {hasOrganizerSession ? (
+            <Link
+              href="/app"
+              className="hidden min-[360px]:block whitespace-nowrap rounded-full bg-primary px-3 py-2.5 text-[12px] font-semibold text-on-primary sm:px-4 sm:text-label-md"
+            >
+              Go to workspace
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/sign-in"
+                className="hidden text-body-sm text-on-surface-variant sm:block"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                className="hidden min-[360px]:block whitespace-nowrap rounded-full bg-primary px-3 py-2.5 text-[12px] font-semibold text-on-primary sm:px-4 sm:text-label-md"
+              >
+                Start planning
+              </Link>
+            </>
+          )}
           <button
             ref={toggle}
             type="button"
@@ -108,20 +123,32 @@ export function SiteHeader() {
             {label}
           </a>
         ))}
-        <Link
-          href="/sign-in"
-          onClick={() => setOpen(false)}
-          className="block rounded-lg px-3 py-3 text-label-md text-primary hover:bg-surface-container"
-        >
-          Sign in
-        </Link>
-        <Link
-          href="/sign-up"
-          onClick={() => setOpen(false)}
-          className="mt-2 block rounded-lg bg-primary px-3 py-3 text-center text-label-md font-semibold text-on-primary"
-        >
-          Start planning
-        </Link>
+        {hasOrganizerSession ? (
+          <Link
+            href="/app"
+            onClick={() => setOpen(false)}
+            className="mt-2 block rounded-lg bg-primary px-3 py-3 text-center text-label-md font-semibold text-on-primary"
+          >
+            Go to workspace
+          </Link>
+        ) : (
+          <>
+            <Link
+              href="/sign-in"
+              onClick={() => setOpen(false)}
+              className="block rounded-lg px-3 py-3 text-label-md text-primary hover:bg-surface-container"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              onClick={() => setOpen(false)}
+              className="mt-2 block rounded-lg bg-primary px-3 py-3 text-center text-label-md font-semibold text-on-primary"
+            >
+              Start planning
+            </Link>
+          </>
+        )}
       </nav>
     </header>
   );

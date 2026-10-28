@@ -7,6 +7,7 @@ export const APPLICATION_ERROR_CODES = [
   "NOT_FOUND",
   "CONFLICT",
   "RATE_LIMITED",
+  "SERVICE_UNAVAILABLE",
   "EXTERNAL_SERVICE_ERROR",
   "INTERNAL_ERROR",
 ] as const;
@@ -52,4 +53,18 @@ export function unauthenticatedError(message = "Authentication is required.") {
 
 export function forbiddenError(message = "You do not have permission to perform this action.") {
   return new ApplicationError({ code: "FORBIDDEN", status: 403, message });
+}
+
+export function notFoundError(message = "The requested resource was not found.") {
+  return new ApplicationError({ code: "NOT_FOUND", status: 404, message });
+}
+
+export function serviceUnavailableError(
+  message = "Vivaahly is temporarily unable to connect to the database. Please try again shortly.",
+) {
+  return new ApplicationError({
+    code: "SERVICE_UNAVAILABLE",
+    status: 503,
+    message,
+  });
 }

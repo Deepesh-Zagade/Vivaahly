@@ -1,70 +1,62 @@
 import "server-only";
 
-import { Resolver } from "node:dns/promises";
+import { setServers } from "node:dns";
 import { MongoClient, type Db } from "mongodb";
 import { getMongoEnvironment } from "@/server/config/env.server";
 
-let mongoClientPromise: Promise<MongoClient> | undefined;
+type MongoGlobalState = typeof globalThis & {
+  __vivaahlyMongoClientPromise?: Promise<MongoClient>;
+};
 
-async function resolveMongoConnectionString(uri: string, dnsServers?: string) {
-  if (!dnsServers || !uri.startsWith("mongodb+srv://")) return uri;
+const mongoGlobalState = globalThis as MongoGlobalState;
 
-  const parsed = new URL(uri);
+function configureMongoDns(uri: string, dnsServers?: string) {
+  if (!dnsServers || !uri.startsWith("mongodb+srv://")) return;
+
   const servers = dnsServers
     .split(",")
     .map((server) => server.trim())
     .filter(Boolean);
 
-  if (servers.length === 0) return uri;
-
-  const resolver = new Resolver();
-  resolver.setServers(servers);
-
-  const [srvRecords, txtRecords] = await Promise.all([
-    resolver.resolveSrv(`_mongodb._tcp.${parsed.hostname}`),
-    resolver.resolveTxt(parsed.hostname).catch(() => []),
-  ]);
-
-  const hosts = srvRecords
-    .map((record) => `${record.name}:${record.port}`)
-    .join(",");
-  const options = new URLSearchParams(parsed.search);
-  const atlasOptions = new URLSearchParams(txtRecords[0]?.join("") ?? "");
-
-  for (const [key, value] of atlasOptions) {
-    if (!options.has(key)) options.set(key, value);
-  }
-
-  options.set("tls", "true");
-
-  const credentials = parsed.username
-    ? `${parsed.username}${parsed.password ? `:${parsed.password}` : ""}@`
-    : "";
-  const pathname = parsed.pathname || "/";
-
-  return `mongodb://${credentials}${hosts}${pathname}?${options.toString()}`;
+  if (servers.length > 0) setServers(servers);
 }
 
 async function connectMongoClient() {
-  const { MONGODB_URI, MONGODB_DNS_SERVERS } = getMongoEnvironment();
-  const connectionString = await resolveMongoConnectionString(
+  const {
     MONGODB_URI,
     MONGODB_DNS_SERVERS,
-  );
-  const client = new MongoClient(connectionString);
+    MONGODB_SERVER_SELECTION_TIMEOUT_MS,
+    MONGODB_CONNECT_TIMEOUT_MS,
+    MONGODB_HEARTBEAT_FREQUENCY_MS,
+  } = getMongoEnvironment();
+
+  configureMongoDns(MONGODB_URI, MONGODB_DNS_SERVERS);
+
+  const client = new MongoClient(MONGODB_URI, {
+    serverSelectionTimeoutMS: MONGODB_SERVER_SELECTION_TIMEOUT_MS,
+    connectTimeoutMS: MONGODB_CONNECT_TIMEOUT_MS,
+    heartbeatFrequencyMS: MONGODB_HEARTBEAT_FREQUENCY_MS,
+    retryReads: true,
+    retryWrites: true,
+    appName: "vivaahly",
+  });
 
   return client.connect();
 }
 
 export function getMongoClient() {
-  if (!mongoClientPromise) {
-    mongoClientPromise = connectMongoClient().catch((error: unknown) => {
-      mongoClientPromise = undefined;
+  if (!mongoGlobalState.__vivaahlyMongoClientPromise) {
+    const cachedPromise = connectMongoClient().catch((error: unknown) => {
+      if (mongoGlobalState.__vivaahlyMongoClientPromise === cachedPromise) {
+        mongoGlobalState.__vivaahlyMongoClientPromise = undefined;
+      }
       throw error;
     });
+
+    mongoGlobalState.__vivaahlyMongoClientPromise = cachedPromise;
   }
 
-  return mongoClientPromise;
+  return mongoGlobalState.__vivaahlyMongoClientPromise;
 }
 
 export async function getMongoDatabase(): Promise<Db> {
@@ -77,8 +69,8 @@ export async function getMongoDatabase(): Promise<Db> {
 }
 
 export async function closeMongoClient() {
-  const activeClientPromise = mongoClientPromise;
-  mongoClientPromise = undefined;
+  const activeClientPromise = mongoGlobalState.__vivaahlyMongoClientPromise;
+  mongoGlobalState.__vivaahlyMongoClientPromise = undefined;
 
   if (activeClientPromise) {
     const client = await activeClientPromise;

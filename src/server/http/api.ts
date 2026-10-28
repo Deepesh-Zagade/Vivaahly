@@ -3,8 +3,21 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { ApplicationError, validationError } from "@/server/http/errors";
+import {
+  ApplicationError,
+  serviceUnavailableError,
+  validationError,
+} from "@/server/http/errors";
 import { logger } from "@/server/observability/logger";
+import {
+  getMongoErrorDiagnostics,
+  isMongoUnavailableError,
+} from "@/server/providers/mongodb/errors";
+
+type ApiErrorContext = {
+  operation: string;
+  startedAt: number;
+};
 
 export function getRequestId(request: Request) {
   return request.headers.get("x-request-id") ?? `req_${randomUUID()}`;
@@ -49,7 +62,16 @@ export function apiNoContentResponse(requestId: string) {
   });
 }
 
-export function apiErrorResponse(error: unknown, request: Request, requestId: string) {
+export function apiErrorResponse(
+  error: unknown,
+  request: Request,
+  requestId: string,
+  context?: ApiErrorContext,
+) {
+  const operation =
+    context?.operation ?? `${request.method} ${new URL(request.url).pathname}`;
+  const durationMs = context ? Date.now() - context.startedAt : undefined;
+
   if (error instanceof ApplicationError) {
     return NextResponse.json(
       {
@@ -67,8 +89,35 @@ export function apiErrorResponse(error: unknown, request: Request, requestId: st
     );
   }
 
+  if (isMongoUnavailableError(error)) {
+    const unavailable = serviceUnavailableError();
+
+    logger.error("MongoDB operation unavailable", {
+      requestId,
+      operation,
+      durationMs,
+      ...getMongoErrorDiagnostics(error),
+    });
+
+    return NextResponse.json(
+      {
+        error: {
+          code: unavailable.code,
+          message: unavailable.message,
+          requestId,
+        },
+      },
+      {
+        status: unavailable.status,
+        headers: { "x-request-id": requestId },
+      },
+    );
+  }
+
   logger.error("Unexpected API request failure", {
     requestId,
+    operation,
+    durationMs,
     method: request.method,
     pathname: new URL(request.url).pathname,
     errorName: error instanceof Error ? error.name : "UnknownError",

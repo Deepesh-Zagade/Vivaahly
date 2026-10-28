@@ -2,6 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  fetchWithTimeout,
+  RequestTimeoutError,
+} from "@/shared/http/fetch-with-timeout";
+
+type LogoutErrorResponse = {
+  error?: { message?: string };
+};
 
 export function LogoutButton() {
   const router = useRouter();
@@ -13,17 +21,24 @@ export function LogoutButton() {
     setError(null);
 
     try {
-      const response = await fetch("/api/v1/auth/logout", { method: "POST" });
+      const response = await fetchWithTimeout("/api/v1/auth/logout", {
+        method: "POST",
+      });
 
       if (!response.ok) {
-        setError("Could not sign out. Please try again.");
+        const result = (await response.json()) as LogoutErrorResponse;
+        setError(result.error?.message ?? "Could not sign out. Please try again.");
         return;
       }
 
       router.replace("/sign-in");
       router.refresh();
-    } catch {
-      setError("Could not sign out. Please try again.");
+    } catch (requestError) {
+      setError(
+        requestError instanceof RequestTimeoutError
+          ? "Sign out took too long. Please try again shortly."
+          : "Could not sign out. Please try again.",
+      );
     } finally {
       setPending(false);
     }
@@ -35,7 +50,7 @@ export function LogoutButton() {
         type="button"
         onClick={logout}
         disabled={pending}
-        className="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-label-md font-semibold text-primary transition-colors hover:bg-surface-container-low disabled:cursor-wait disabled:opacity-70"
+        className="min-h-11 whitespace-nowrap rounded-xl px-2.5 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary disabled:cursor-wait disabled:opacity-70 sm:px-3"
       >
         {pending ? "Signing out..." : "Sign out"}
       </button>

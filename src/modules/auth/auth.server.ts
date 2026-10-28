@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { MongoAuthRepository } from "@/modules/auth/repositories/mongodb-auth.repository";
 import { AuthService } from "@/modules/auth/auth.service";
+import { getWeddingService } from "@/modules/wedding/wedding.server";
 import { unauthenticatedError } from "@/server/http/errors";
 import { getMongoDatabase } from "@/server/providers/mongodb/client";
 
@@ -20,7 +21,15 @@ export const getCurrentOrganizer = cache(async () => {
 
   if (!rawToken) return null;
 
-  return (await getAuthService()).authenticate(rawToken);
+  const organizer = await (await getAuthService()).authenticate(rawToken);
+
+  if (!organizer) return null;
+
+  const membership = await (
+    await getWeddingService()
+  ).findActiveMembershipForUser(organizer.user.id);
+
+  return { ...organizer, membership };
 });
 
 export async function requireCurrentOrganizer() {

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { ORGANIZER_SESSION_COOKIE } from "@/modules/auth/auth.server";
 import { SiteHeader } from "./_components/site-header";
 import { SiteFooter } from "./_components/site-footer";
 import { HeroSection } from "./_components/sections/hero";
@@ -21,7 +23,9 @@ export const metadata: Metadata = {
     "Bring wedding events, guests, RSVPs, family tasks, vendors, expenses, and shared memories into one calm workspace. Built for Indian weddings.",
 };
 
-export default function MarketingPage() {
+export default async function MarketingPage() {
+  const hasOrganizerSession = (await cookies()).has(ORGANIZER_SESSION_COOKIE);
+
   return (
     <div id="top" className="marketing-page">
       <a
@@ -30,9 +34,9 @@ export default function MarketingPage() {
       >
         Skip to content
       </a>
-      <SiteHeader />
+      <SiteHeader hasOrganizerSession={hasOrganizerSession} />
       <main id="main-content" tabIndex={-1}>
-        <HeroSection />
+        <HeroSection hasOrganizerSession={hasOrganizerSession} />
         <CoordinationSection />
         <WorkspaceSection />
         <CeremoniesSection />
@@ -44,7 +48,7 @@ export default function MarketingPage() {
         <MediaSection />
         <PrivacySection />
         <OverviewSection />
-        <ClosingSection />
+        <ClosingSection hasOrganizerSession={hasOrganizerSession} />
       </main>
       <SiteFooter />
     </div>

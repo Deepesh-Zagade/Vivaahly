@@ -61,6 +61,13 @@ export class AuthService {
   }
 
   async login(input: LoginOrganizerInput) {
+    const user = await this.verifyCredentials(input);
+    const session = await this.createSession(user.id);
+
+    return { user, ...session };
+  }
+
+  async verifyCredentials(input: LoginOrganizerInput) {
     const user = await this.repository.findUserByEmailNormalized(input.email);
     const passwordMatches = await verifyPassword(
       user?.passwordHash ?? INVALID_LOGIN_PASSWORD_HASH,
@@ -71,6 +78,10 @@ export class AuthService {
       throw unauthenticatedError("Incorrect email address or password.");
     }
 
+    return user;
+  }
+
+  async createSession(userId: string) {
     const createdAt = this.now();
     const expiresAt = new Date(
       createdAt.getTime() + ORGANIZER_SESSION_DURATION_SECONDS * 1_000,
@@ -78,13 +89,13 @@ export class AuthService {
     const { rawToken, tokenHash } = createSessionToken();
 
     await this.repository.createSession({
-      userId: user.id,
+      userId,
       tokenHash,
       expiresAt,
       createdAt,
     });
 
-    return { user, rawToken, expiresAt };
+    return { rawToken, expiresAt };
   }
 
   async authenticate(rawToken: string): Promise<AuthenticatedOrganizer | null> {

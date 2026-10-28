@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const requestId = getRequestId(request);
+  const startedAt = Date.now();
 
   try {
     const organizer = await getCurrentOrganizer();
@@ -21,6 +22,9 @@ export async function GET(request: Request) {
       requestId,
     );
   } catch (error) {
-    return apiErrorResponse(error, request, requestId);
+    return apiErrorResponse(error, request, requestId, {
+      operation: "organizer.session.read",
+      startedAt,
+    });
   }
 }

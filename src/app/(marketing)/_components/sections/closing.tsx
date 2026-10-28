@@ -1,7 +1,11 @@
 import Link from "next/link";
 
 // Static product illustration adapted from the approved Stitch homepage.
-export function ClosingSection() {
+export function ClosingSection({
+  hasOrganizerSession,
+}: {
+  hasOrganizerSession: boolean;
+}) {
   return (
     <section
       id="start-planning"
@@ -25,10 +29,12 @@ export function ClosingSection() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
             <Link
-              href="/sign-up"
+              href={hasOrganizerSession ? "/app" : "/sign-up"}
               className="w-full sm:w-auto inline-flex items-center justify-center bg-surface-container-lowest text-primary hover:bg-white font-label-md text-label-md px-8 py-4 rounded-xl transition-all shadow-md font-semibold"
             >
-              Start planning your wedding
+              {hasOrganizerSession
+                ? "Go to your workspace"
+                : "Start planning your wedding"}
             </Link>
             <a
               className="w-full sm:w-auto inline-flex items-center justify-center border border-on-primary/30 text-on-primary hover:bg-on-primary/10 font-label-md text-label-md px-7 py-4 rounded-xl transition-all"

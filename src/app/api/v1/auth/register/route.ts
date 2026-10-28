@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const requestId = getRequestId(request);
+  const startedAt = Date.now();
 
   try {
     const input = await parseJson(request, registerOrganizerSchema);
@@ -19,6 +20,9 @@ export async function POST(request: Request) {
 
     return apiDataResponse({ user: mapOrganizerUserDto(user) }, requestId, 201);
   } catch (error) {
-    return apiErrorResponse(error, request, requestId);
+    return apiErrorResponse(error, request, requestId, {
+      operation: "organizer.register",
+      startedAt,
+    });
   }
 }

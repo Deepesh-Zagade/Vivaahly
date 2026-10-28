@@ -4,16 +4,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import {
-  getOrganizerPasswordError,
+  loginOrganizerSchema,
+  registerOrganizerSchema,
+} from "@/modules/auth/auth.schemas";
+import {
   ORGANIZER_PASSWORD_MAX_LENGTH,
   ORGANIZER_PASSWORD_MIN_LENGTH,
 } from "@/modules/auth/password-policy";
+import {
+  fetchWithTimeout,
+  RequestTimeoutError,
+} from "@/shared/http/fetch-with-timeout";
 
 type AuthMode = "sign-in" | "sign-up";
 type FieldName = "name" | "email" | "password";
 
 type ErrorResponse = {
   error?: {
+    code?: string;
     message?: string;
     details?: {
       fieldErrors?: Partial<Record<FieldName, string[]>>;
@@ -107,26 +115,34 @@ export function AuthForm({ mode, registered = false }: { mode: AuthMode; registe
       password: String(form.get("password") ?? ""),
     };
 
-    if (isSignUp) {
-      const passwordError = getOrganizerPasswordError(payload.password);
+    const validation = (
+      isSignUp ? registerOrganizerSchema : loginOrganizerSchema
+    ).safeParse(payload);
 
-      if (passwordError) {
-        setFieldErrors({ password: [passwordError] });
-        const passwordInput = event.currentTarget.elements.namedItem("password");
-        if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
-        return;
+    if (!validation.success) {
+      const nextErrors: Partial<Record<FieldName, string[]>> = {};
+
+      for (const issue of validation.error.issues) {
+        const field = issue.path[0] as FieldName | undefined;
+        if (field && !nextErrors[field]) nextErrors[field] = [issue.message];
       }
+
+      setFieldErrors(nextErrors);
+      const firstInvalidField = validation.error.issues[0]?.path[0];
+      const input = event.currentTarget.elements.namedItem(String(firstInvalidField));
+      if (input instanceof HTMLInputElement) input.focus();
+      return;
     }
 
     setPending(true);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         isSignUp ? "/api/v1/auth/register" : "/api/v1/auth/login",
         {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(validation.data),
         },
       );
 
@@ -143,8 +159,12 @@ export function AuthForm({ mode, registered = false }: { mode: AuthMode; registe
         router.push("/app");
         router.refresh();
       }
-    } catch {
-      setFormError("We could not reach Vivaahly. Check your connection and try again.");
+    } catch (error) {
+      setFormError(
+        error instanceof RequestTimeoutError
+          ? "Vivaahly took too long to respond. Please try again shortly."
+          : "We could not reach Vivaahly. Check your connection and try again.",
+      );
     } finally {
       setPending(false);
     }

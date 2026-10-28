@@ -2,7 +2,11 @@ import { Icon } from "../icon";
 import Link from "next/link";
 
 // Static product illustration adapted from the approved Stitch homepage.
-export function HeroSection() {
+export function HeroSection({
+  hasOrganizerSession,
+}: {
+  hasOrganizerSession: boolean;
+}) {
   return (
     <section
       id="product"
@@ -36,10 +40,10 @@ export function HeroSection() {
 
         <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
           <Link
-            href="/sign-up"
+            href={hasOrganizerSession ? "/app" : "/sign-up"}
             className="w-full sm:w-auto inline-flex items-center justify-center bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md px-8 py-4 rounded-xl transition-all shadow-md hover:shadow-lg"
           >
-            Start planning
+            {hasOrganizerSession ? "Continue planning" : "Start planning"}
           </Link>
           <a
             className="w-full sm:w-auto inline-flex items-center justify-center bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container font-label-md text-label-md px-7 py-4 rounded-xl transition-all"

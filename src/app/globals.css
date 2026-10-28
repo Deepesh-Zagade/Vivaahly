@@ -41,6 +41,11 @@ select {
   outline-offset: 3px;
 }
 
+.organizer-page :where(a, button, input, select):focus-visible {
+  outline: 3px solid #a65c76;
+  outline-offset: 3px;
+}
+
 .auth-ambient::before,
 .auth-ambient::after {
   position: absolute;

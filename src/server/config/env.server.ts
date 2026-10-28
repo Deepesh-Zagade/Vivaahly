@@ -13,6 +13,24 @@ const mongoEnvironmentSchema = z.object({
     .min(1, "MONGODB_DB_NAME is required.")
     .regex(/^[^/\\.\s"$*<>:|?]+$/, "MONGODB_DB_NAME contains unsupported characters."),
   MONGODB_DNS_SERVERS: z.string().optional(),
+  MONGODB_SERVER_SELECTION_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(30_000)
+    .default(30_000),
+  MONGODB_CONNECT_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(30_000)
+    .default(30_000),
+  MONGODB_HEARTBEAT_FREQUENCY_MS: z.coerce
+    .number()
+    .int()
+    .min(500)
+    .max(60_000)
+    .default(10_000),
 });
 
 export const serverEnvironment = serverEnvironmentSchema.parse({
@@ -24,5 +42,10 @@ export function getMongoEnvironment() {
     MONGODB_URI: process.env.MONGODB_URI,
     MONGODB_DB_NAME: process.env.MONGODB_DB_NAME,
     MONGODB_DNS_SERVERS: process.env.MONGODB_DNS_SERVERS,
+    MONGODB_SERVER_SELECTION_TIMEOUT_MS:
+      process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS,
+    MONGODB_CONNECT_TIMEOUT_MS: process.env.MONGODB_CONNECT_TIMEOUT_MS,
+    MONGODB_HEARTBEAT_FREQUENCY_MS:
+      process.env.MONGODB_HEARTBEAT_FREQUENCY_MS,
   });
 }

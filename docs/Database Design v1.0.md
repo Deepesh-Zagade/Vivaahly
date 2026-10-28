@@ -427,6 +427,11 @@ Example:
       timezone: "Asia/Kolkata",
 
       primaryVenue: {
+        city: {
+          en: "Pune, Maharashtra",
+          mr: "पुणे, महाराष्ट्र"
+        },
+
         name: {
           en: "Shree Mangal Karyalay",
           mr: "श्री मंगल कार्यालय"
@@ -464,6 +469,11 @@ Example:
       createdAt: Date,
       updatedAt: Date
     }
+
+`primaryVenue.city.en` is captured during initial wedding onboarding.
+`primaryVenue.city.mr`, venue name, full address, and map URL may be added
+later through wedding settings. This keeps first-time setup short without
+placing location data in an unrelated root-level field.
 
 # 12. Wedding Slug
 

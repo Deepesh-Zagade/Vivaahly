@@ -15,6 +15,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const requestId = getRequestId(request);
+  const startedAt = Date.now();
 
   try {
     assertSameOrigin(request);
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    return apiErrorResponse(error, request, requestId);
+    return apiErrorResponse(error, request, requestId, {
+      operation: "organizer.logout",
+      startedAt,
+    });
   }
 }
