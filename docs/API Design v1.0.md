@@ -868,6 +868,22 @@ Because an organizer belongs to at most one wedding in V1, organizer APIs do not
 | `PATCH` | `/wedding/website` | Admin/Manager | Update guest-site settings |
 | `PATCH` | `/wedding/livestream` | Admin/Manager | Update YouTube livestream settings |
 
+`PATCH /wedding` accepts only the essential fields exposed during onboarding:
+couple names, wedding title, main wedding date, timezone, and primary wedding
+city/location. The authoritative `weddingId` comes from the organizer's active
+membership and must not be accepted from the request body. The existing slug,
+Media Hub access key, website configuration, counters, and creation metadata
+remain unchanged.
+
+The update service rejects a proposed past date with `400 VALIDATION_ERROR`.
+Editing remains available through the existing wedding's local calendar date;
+after that date, the complete wedding-details mutation returns `409 CONFLICT`.
+
+Fields that are not exposed by this request must be preserved. In particular,
+updating `title.en` must not replace or derive `title.mr`, and updating
+`primaryVenue.city.en` must not replace the complete `primaryVenue` object or
+remove localized city, venue name, address, or map data.
+
 ---
 
 # 30. Create Wedding

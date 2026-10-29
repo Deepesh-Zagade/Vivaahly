@@ -67,3 +67,5 @@ The wedding onboarding vertical slice lives under `src/modules/wedding` and `/ap
 `POST /api/v1/wedding` creates the tenant for an authenticated organizer without an active membership, while `GET /api/v1/wedding` returns the wedding resolved from authenticated membership context. Browser-supplied wedding identifiers are never authoritative.
 
 The explicit `db:indexes` command now prepares both authentication and wedding indexes, including the partial unique active-membership constraint required for one active wedding per organizer in V1.
+
+Organizers can update the essential onboarding fields at `/app/settings` through the wedding's local calendar date. `PATCH /api/v1/wedding` derives the authoritative wedding from active membership, preserves the stable slug and non-editable configuration, and rejects past-date or post-wedding mutations.

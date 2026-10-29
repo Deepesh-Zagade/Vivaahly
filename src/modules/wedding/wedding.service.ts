@@ -1,7 +1,10 @@
 import "server-only";
 
 import { randomBytes } from "node:crypto";
-import type { CreateWeddingInput } from "@/modules/wedding/wedding.schemas";
+import type {
+  CreateWeddingInput,
+  UpdateWeddingInput,
+} from "@/modules/wedding/wedding.schemas";
 import {
   ActiveWeddingMembershipError,
   DuplicateMediaAccessKeyError,
@@ -10,6 +13,7 @@ import {
 import {
   mapMembershipContext,
   type OrganizerMembershipContext,
+  type Wedding,
 } from "@/modules/wedding/wedding.types";
 import {
   conflictError,
@@ -44,7 +48,7 @@ export function generateWeddingSlug(input: CreateWeddingInput) {
   return `${names}-${dateStamp(input.mainWeddingDate)}`;
 }
 
-function todayInTimezone(now: Date, timezone: string) {
+export function calendarDateInTimezone(now: Date, timezone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
@@ -53,6 +57,10 @@ function todayInTimezone(now: Date, timezone: string) {
   }).formatToParts(now);
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+function weddingDateValue(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function defaultMediaAccessKey() {
@@ -84,7 +92,10 @@ export class WeddingService {
   async createWedding(userId: string, input: CreateWeddingInput) {
     const createdAt = this.now();
 
-    if (input.mainWeddingDate < todayInTimezone(createdAt, input.timezone)) {
+    if (
+      input.mainWeddingDate <
+      calendarDateInTimezone(createdAt, input.timezone)
+    ) {
       throw validationError("The wedding date cannot be in the past.", {
         fieldErrors: {
           mainWeddingDate: ["Choose today or a future wedding date."],
@@ -140,5 +151,51 @@ export class WeddingService {
     }
 
     return wedding;
+  }
+
+  getWeddingEditingState(wedding: Pick<Wedding, "mainWeddingDate" | "timezone">) {
+    const today = calendarDateInTimezone(this.now(), wedding.timezone);
+
+    return {
+      today,
+      editable: weddingDateValue(wedding.mainWeddingDate) >= today,
+    };
+  }
+
+  async updateWedding(
+    membership: OrganizerMembershipContext,
+    input: UpdateWeddingInput,
+  ) {
+    const wedding = await this.getWeddingForOrganizer(membership);
+    const updatedAt = this.now();
+
+    if (!this.getWeddingEditingState(wedding).editable) {
+      throw conflictError(
+        "Wedding details can no longer be edited because the wedding date has passed.",
+      );
+    }
+
+    if (
+      input.mainWeddingDate <
+      calendarDateInTimezone(updatedAt, input.timezone)
+    ) {
+      throw validationError("The wedding date cannot be in the past.", {
+        fieldErrors: {
+          mainWeddingDate: ["Choose today or a future wedding date."],
+        },
+      });
+    }
+
+    const updated = await this.repository.updateWeddingDetails(wedding.id, {
+      couple: input.couple,
+      titleEn: input.title.en,
+      mainWeddingDate: new Date(`${input.mainWeddingDate}T00:00:00.000Z`),
+      timezone: input.timezone,
+      primaryVenueCityEn: input.primaryVenue.city.en,
+      updatedAt,
+    });
+
+    if (!updated) throw notFoundError("Wedding not found.");
+    return updated;
   }
 }

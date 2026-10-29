@@ -595,6 +595,10 @@ Slug generation should:
 5.  Append the main wedding date in `DDMMYYYY` format.
 6.  Convert the final value to lowercase.
 
+The slug is generated when the Wedding is created and remains stable when an
+organizer later edits couple names or the main wedding date. It is a readable
+route label rather than an editable identity or tenant-authorization key.
+
 Example:
 
     Deepesh & Priya

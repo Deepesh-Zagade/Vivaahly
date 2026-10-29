@@ -1,5 +1,8 @@
 import { requireCurrentOrganizer } from "@/modules/auth/auth.server";
-import { createWeddingSchema } from "@/modules/wedding/wedding.schemas";
+import {
+  createWeddingSchema,
+  updateWeddingSchema,
+} from "@/modules/wedding/wedding.schemas";
 import { getWeddingService } from "@/modules/wedding/wedding.server";
 import {
   mapMembershipContext,
@@ -75,6 +78,38 @@ export async function POST(request: Request) {
   } catch (error) {
     return apiErrorResponse(error, request, requestId, {
       operation: "wedding.create",
+      startedAt,
+    });
+  }
+}
+
+export async function PATCH(request: Request) {
+  const requestId = getRequestId(request);
+  const startedAt = Date.now();
+
+  try {
+    assertSameOrigin(request);
+    const organizer = await requireCurrentOrganizer();
+
+    if (!organizer.membership) {
+      throw conflictError("Create a wedding before updating wedding details.");
+    }
+
+    const input = await parseJson(request, updateWeddingSchema);
+    const wedding = await (
+      await getWeddingService()
+    ).updateWedding(organizer.membership, input);
+
+    logger.info("Wedding details updated", {
+      requestId,
+      weddingId: wedding.id,
+      userId: organizer.user.id,
+    });
+
+    return apiDataResponse({ wedding: mapWeddingDto(wedding) }, requestId);
+  } catch (error) {
+    return apiErrorResponse(error, request, requestId, {
+      operation: "wedding.update",
       startedAt,
     });
   }

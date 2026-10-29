@@ -281,6 +281,13 @@ The exact onboarding flow will be designed later.
 
 The setup experience should remain simple enough that the user can start managing the wedding quickly.
 
+Admins and Managers may update the essential onboarding details while the
+wedding is still being planned. Editing remains available through the wedding's
+local calendar date and becomes read-only on the following day. An update may
+not move the main wedding date into the past. Post-wedding experiences such as
+the Media Hub remain available; only the essential wedding-details form is
+locked by this rule.
+
 ---
 
 # 9. Organizer Dashboard

@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
 **Last updated:** 2026-10-28
-**Current phase:** Wedding creation and organizer onboarding complete
+**Current phase:** Wedding creation, onboarding, and essential-details editing complete
 **Active branch:** `dev`
 
 ## Purpose
@@ -19,6 +19,7 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | Guest Logistics responsive correction | Complete | Guest-status filter controls were corrected so their labels remain contained and readable on small and medium screens. |
 | Organizer authentication | Complete | Account creation, sign in, session restoration, protected `/app` access, and sign out are implemented as the first application vertical slice. |
 | Wedding onboarding | Complete | Authenticated organizers can create the Wedding tenant and become its initial Admin through the responsive `/app/onboarding` flow. |
+| Wedding details settings | Complete | Admins and Managers can update the essential onboarding details at `/app/settings` until the wedding's local date has passed. |
 | Organizer application | In progress | `/app` resolves and displays the authoritative wedding context; planning features such as events, guests, and tasks remain unimplemented. |
 | Guest invitation experience | Not started | Invitation entry and invitation-scoped guest functionality have not been implemented. |
 | Media Hub | Not started | Media access and Media Hub functionality have not been implemented. |
@@ -196,14 +197,48 @@ Operational limitation:
 - A future ISP address change can legitimately block local Atlas access again. The correct response is to add the new current address as a `/32` Atlas entry or use a stable development egress IP; application retries cannot repair an Atlas access-policy rejection.
 - Old IP entries should be reviewed and removed manually when they are no longer needed. They were not deleted during this correction because they may belong to other authorized development networks.
 
+### 9. Wedding details settings
+
+**Status:** Complete
+
+**Reference commit:** This feature commit (`feat: add wedding details settings`)
+
+Delivered:
+
+- A responsive, Stitch-aligned `/app/settings` form that deliberately reuses the onboarding page's typography, card, field, section, and action patterns.
+- Prefilled editing for the existing bride and groom names, optional Marathi names, wedding title, main wedding date, timezone, and primary city/location.
+- An **Edit wedding details** workspace action and Cancel/return flow.
+- Successful saves return directly to the workspace. The workspace card always
+  uses the current couple names as its primary heading and presents a genuinely
+  custom wedding title above them without duplicating a generated name title.
+- The wedding title is edited independently from the couple names, avoiding
+  surprising title changes when an organizer corrects either person's name.
+- Successful updates show an accessible confirmation for five seconds after
+  returning to the workspace. Field errors now remain while a value is invalid
+  and clear immediately once that field is corrected.
+- Wedding-detail persistence uses leaf-level updates for the English title and
+  English city, preserving custom Marathi title content, localized city data,
+  and deferred venue name, address, and map fields.
+- `PATCH /api/v1/wedding`, authenticated through the organizer session and active membership without accepting a browser-supplied `weddingId`.
+- A domain update path that preserves the stable slug, Media Hub access key, website settings, counters, creator metadata, and other non-editable fields.
+- Server-authoritative date rules: a proposed past date is invalid, editing remains available on the wedding's local date, and the form becomes read-only beginning the next local day.
+- Admin and Manager compatibility, field-level validation, save confirmation, bounded request handling, controlled database-unavailable responses, and persisted workspace refresh.
+- Automated coverage for update validation, immutable-field rejection, tenant derivation, stable slug behavior, localized-content preservation, wedding-day editing, post-wedding locking, routing, same-origin protection, and database outages.
+
+Intentional limitations:
+
+- Venue address, map link, description, cover image, website configuration, and other extended wedding settings remain deferred.
+- Editing the essential wedding details does not regenerate the readable wedding slug.
+- Post-wedding organizer and guest experiences are not disabled; only essential wedding-detail editing is locked.
+
 ## Current Verification State
 
-At the completion of the wedding-onboarding work:
+At the completion of the wedding-details settings work:
 
 - Linting passed.
 - Type checking passed.
 - The production build passed using Next.js's webpack builder. Turbopack reached a Windows worker/CSS panic after the sandboxed run was retried with font-network access; the supported webpack build completed successfully.
-- The automated test suite passed with 57 tests covering authentication, password whitespace edge cases, wedding validation and domain behavior, HTTP errors, persistent database-outage behavior, MongoDB client lifecycle, login membership contexts, cookie safety, operation ordering, request cancellation, route protection, same-origin protections, and organizer error-boundary recovery UI.
+- The automated test suite passed with 83 tests covering authentication, password whitespace edge cases, wedding creation and updates, localized-title and venue-field preservation, title presentation, field-level correction feedback, redirected update confirmation, date-lock behavior, HTTP errors, persistent database-outage behavior, MongoDB client lifecycle, login membership contexts, cookie safety, operation ordering, request cancellation, route protection, same-origin protections, and organizer error-boundary recovery UI.
 - The Atlas wedding and membership indexes were created successfully through the repeatable database-index command.
 - Initial temporary-account checks could not reach registration while the Atlas primary was unavailable. No wedding data was created by those attempts.
 - A live unknown-account login during the outage returned `503 SERVICE_UNAVAILABLE` in approximately 6.9 seconds and did not set a session cookie.
@@ -217,14 +252,15 @@ At the completion of the wedding-onboarding work:
 - Desktop browser rendering of the authentication experience passed; final mobile and tablet visual checks should be rerun whenever the design changes.
 - The homepage header, hero, and closing CTA foreground/background contrast passed live responsive browser verification.
 - The authenticated homepage passed live mobile-width verification with **Go to workspace**, **Continue planning**, and **Go to your workspace** actions all targeting `/app`.
+- An Atlas-backed disposable organizer passed registration, wedding onboarding, prefilled settings rendering, persisted detail updates, refresh verification, workspace reflection, and the post-wedding read-only UI. Its user, session, membership, and wedding records were removed after verification.
 
 Run the repository scripts again after future implementation changes; this section describes the latest completed milestone rather than guaranteeing the state of later unverified work.
 
 ## Current Implementation Boundary
 
-The repository now proves the project foundation, marketing UI, organizer authentication boundary, Wedding tenant creation, and authenticated tenant resolution. It does not yet contain wedding events, guest invitations and RSVP, planning modules, email delivery, media storage, or Media Hub access.
+The repository now proves the project foundation, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, and essential wedding-detail editing. It does not yet contain wedding events, guest invitations and RSVP, planning modules, email delivery, media storage, or Media Hub access.
 
-The recommended next milestone is wedding-event management as a vertical slice. Events establish the ceremony structure required by later guest invitation and RSVP work.
+The recommended next milestone is organizer invitation and acceptance as a vertical slice so the initial Admin can begin collaborating with family members before planning modules are added.
 
 ## Maintenance Rules
 

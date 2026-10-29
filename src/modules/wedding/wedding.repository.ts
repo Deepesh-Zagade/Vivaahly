@@ -35,10 +35,23 @@ export type CreatedWeddingWithMembership = {
   membership: WeddingMembership;
 };
 
+export type UpdateWeddingDetailsRecord = {
+  couple: Wedding["couple"];
+  titleEn: string;
+  mainWeddingDate: Date;
+  timezone: string;
+  primaryVenueCityEn: string;
+  updatedAt: Date;
+};
+
 export interface WeddingRepository {
   findActiveMembershipByUserId(userId: string): Promise<WeddingMembership | null>;
   findWeddingById(weddingId: string): Promise<Wedding | null>;
   createWeddingWithAdminMembership(
     input: CreateWeddingRecord,
   ): Promise<CreatedWeddingWithMembership>;
+  updateWeddingDetails(
+    weddingId: string,
+    input: UpdateWeddingDetailsRecord,
+  ): Promise<Wedding | null>;
 }

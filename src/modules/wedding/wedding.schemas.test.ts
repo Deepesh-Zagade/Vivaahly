@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createWeddingSchema } from "@/modules/wedding/wedding.schemas";
+import {
+  createWeddingSchema,
+  updateWeddingSchema,
+} from "@/modules/wedding/wedding.schemas";
 
 const validInput = {
   couple: {
@@ -62,6 +65,39 @@ describe("createWeddingSchema", () => {
       createWeddingSchema.safeParse({
         ...validInput,
         primaryVenue: { city: { en: "   " } },
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("updateWeddingSchema", () => {
+  it("accepts the fields exposed by the wedding-details form", () => {
+    expect(updateWeddingSchema.parse(validInput)).toMatchObject(validInput);
+  });
+
+  it("rejects caller-supplied tenant and immutable fields", () => {
+    expect(
+      updateWeddingSchema.safeParse({
+        ...validInput,
+        weddingId: "another-wedding",
+        slug: "changed-slug",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("does not accept localized fields that the current form cannot edit", () => {
+    expect(
+      updateWeddingSchema.safeParse({
+        ...validInput,
+        title: { en: "Deepesh & Priya", mr: "दीपेश आणि प्रिया" },
+      }).success,
+    ).toBe(false);
+    expect(
+      updateWeddingSchema.safeParse({
+        ...validInput,
+        primaryVenue: {
+          city: { en: "Pune, Maharashtra", mr: "पुणे, महाराष्ट्र" },
+        },
       }).success,
     ).toBe(false);
   });

@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { CreateWeddingInput } from "@/modules/wedding/wedding.schemas";
+import type {
+  CreateWeddingInput,
+  UpdateWeddingInput,
+} from "@/modules/wedding/wedding.schemas";
 import {
   ActiveWeddingMembershipError,
   DuplicateMediaAccessKeyError,
   type CreateWeddingRecord,
+  type UpdateWeddingDetailsRecord,
   type WeddingRepository,
 } from "@/modules/wedding/wedding.repository";
 import {
@@ -26,6 +30,7 @@ const input: CreateWeddingInput = {
   timezone: "Asia/Kolkata",
   primaryVenue: { city: { en: "Pune, Maharashtra" } },
 };
+const updateInput: UpdateWeddingInput = input;
 
 class FakeWeddingRepository implements WeddingRepository {
   weddings: Wedding[] = [];
@@ -90,6 +95,33 @@ class FakeWeddingRepository implements WeddingRepository {
     this.weddings.push(wedding);
     this.memberships.push(membership);
     return { wedding, membership };
+  }
+
+  async updateWeddingDetails(
+    weddingId: string,
+    record: UpdateWeddingDetailsRecord,
+  ) {
+    const index = this.weddings.findIndex((wedding) => wedding.id === weddingId);
+    if (index < 0) return null;
+
+    const current = this.weddings[index]!;
+    const updated: Wedding = {
+      ...current,
+      couple: record.couple,
+      title: { ...current.title, en: record.titleEn },
+      mainWeddingDate: record.mainWeddingDate,
+      timezone: record.timezone,
+      primaryVenue: {
+        ...current.primaryVenue,
+        city: {
+          ...current.primaryVenue.city,
+          en: record.primaryVenueCityEn,
+        },
+      },
+      updatedAt: record.updatedAt,
+    };
+    this.weddings[index] = updated;
+    return updated;
   }
 }
 
@@ -200,5 +232,191 @@ describe("WeddingService", () => {
         role: "ADMIN",
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND", status: 404 });
+  });
+
+  it("updates editable wedding details without changing the stable slug", async () => {
+    const { service } = createService();
+    const created = await service.createWedding("user-1", input);
+    const updated = await service.updateWedding(
+      {
+        id: created.membership.id,
+        weddingId: created.wedding.id,
+        role: "MANAGER",
+      },
+      {
+        ...updateInput,
+        couple: {
+          bride: { name: { en: "Priya Joshi", mr: "प्रिया जोशी" } },
+          groom: updateInput.couple.groom,
+        },
+        title: { en: "Deepesh & Priya — Pune" },
+        mainWeddingDate: "2027-03-01",
+        primaryVenue: { city: { en: "Nashik, Maharashtra" } },
+      },
+    );
+
+    expect(updated).toMatchObject({
+      slug: created.wedding.slug,
+      title: {
+        en: "Deepesh & Priya — Pune",
+        mr: "दीपेश पाटील आणि प्रिया शर्मा",
+      },
+      mainWeddingDate: new Date("2027-03-01T00:00:00.000Z"),
+      primaryVenue: { city: { en: "Nashik, Maharashtra" } },
+    });
+  });
+
+  it("preserves a custom Marathi title when English details change", async () => {
+    const { service, repository } = createService();
+    const created = await service.createWedding("user-1", input);
+    repository.weddings[0]!.title.mr = "आमची नवी सुरुवात";
+
+    const updated = await service.updateWedding(
+      {
+        id: created.membership.id,
+        weddingId: created.wedding.id,
+        role: "ADMIN",
+      },
+      {
+        ...updateInput,
+        title: { en: "Our Forever Begins" },
+      },
+    );
+
+    expect(updated.title).toEqual({
+      en: "Our Forever Begins",
+      mr: "आमची नवी सुरुवात",
+    });
+  });
+
+  it("keeps existing non-editable localized location content", async () => {
+    const { service, repository } = createService();
+    const created = await service.createWedding("user-1", input);
+    repository.weddings[0]!.primaryVenue.city.mr = "पुणे, महाराष्ट्र";
+
+    const updated = await service.updateWedding(
+      {
+        id: created.membership.id,
+        weddingId: created.wedding.id,
+        role: "ADMIN",
+      },
+      {
+        ...updateInput,
+        primaryVenue: { city: { en: "Mumbai, Maharashtra" } },
+      },
+    );
+
+    expect(updated.primaryVenue.city).toEqual({
+      en: "Mumbai, Maharashtra",
+      mr: "पुणे, महाराष्ट्र",
+    });
+  });
+
+  it("preserves deferred venue fields when the city changes", async () => {
+    const { service, repository } = createService();
+    const created = await service.createWedding("user-1", input);
+    const extendedVenue = {
+      city: repository.weddings[0]!.primaryVenue.city,
+      name: { en: "Shree Mangal Karyalay" },
+      address: { en: "123 Celebration Road" },
+      mapUrl: "https://maps.example/venue",
+    };
+    repository.weddings[0]!.primaryVenue = extendedVenue;
+
+    const updated = await service.updateWedding(
+      {
+        id: created.membership.id,
+        weddingId: created.wedding.id,
+        role: "ADMIN",
+      },
+      {
+        ...updateInput,
+        primaryVenue: { city: { en: "Mumbai, Maharashtra" } },
+      },
+    );
+
+    expect(updated.primaryVenue).toMatchObject({
+      city: { en: "Mumbai, Maharashtra" },
+      name: { en: "Shree Mangal Karyalay" },
+      address: { en: "123 Celebration Road" },
+      mapUrl: "https://maps.example/venue",
+    });
+  });
+
+  it("allows wedding details to be edited on the wedding's local date", async () => {
+    const { service } = createService();
+    const created = await service.createWedding("user-1", {
+      ...input,
+      mainWeddingDate: "2026-10-27",
+    });
+
+    await expect(
+      service.updateWedding(
+        {
+          id: created.membership.id,
+          weddingId: created.wedding.id,
+          role: "ADMIN",
+        },
+        { ...updateInput, mainWeddingDate: "2026-10-27" },
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  it("rejects changing the wedding date to a past date", async () => {
+    const { service } = createService();
+    const created = await service.createWedding("user-1", input);
+
+    await expect(
+      service.updateWedding(
+        {
+          id: created.membership.id,
+          weddingId: created.wedding.id,
+          role: "ADMIN",
+        },
+        { ...updateInput, mainWeddingDate: "2026-10-26" },
+      ),
+    ).rejects.toMatchObject({ code: "VALIDATION_ERROR", status: 400 });
+  });
+
+  it("locks all wedding-detail editing after the local wedding date", async () => {
+    const repository = new FakeWeddingRepository();
+    const service = new WeddingService({
+      repository,
+      now: () => new Date("2026-10-28T10:00:00.000Z"),
+      createMediaAccessKey: () => "media-key-1",
+    });
+    const pastWedding: Wedding = {
+      id: "wedding-1",
+      slug: "deepesh-and-priya-27102026",
+      status: "ACTIVE",
+      couple: input.couple,
+      title: input.title,
+      mainWeddingDate: new Date("2026-10-27T00:00:00.000Z"),
+      timezone: "Asia/Kolkata",
+      primaryVenue: input.primaryVenue,
+      website: {
+        themeId: "THEME_01",
+        defaultLocale: "en",
+        supportedLocales: ["en", "mr"],
+        livestream: { enabled: false, youtubeUrl: null },
+      },
+      mediaAccessKey: "media-key-1",
+      counters: { eventCount: 0 },
+      createdByUserId: "user-1",
+      createdAt: now,
+      updatedAt: now,
+    };
+    repository.weddings.push(pastWedding);
+
+    expect(service.getWeddingEditingState(pastWedding)).toEqual({
+      today: "2026-10-28",
+      editable: false,
+    });
+    await expect(
+      service.updateWedding(
+        { id: "membership-1", weddingId: pastWedding.id, role: "ADMIN" },
+        updateInput,
+      ),
+    ).rejects.toMatchObject({ code: "CONFLICT", status: 409 });
   });
 });

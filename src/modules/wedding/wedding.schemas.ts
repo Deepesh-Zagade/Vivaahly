@@ -31,22 +31,24 @@ const timezoneSchema = z.string().refine((value) => {
   }
 }, "Choose a valid timezone.");
 
+const coupleSchema = z.object({
+  bride: z.object({
+    name: z.object({
+      en: requiredText("Bride's English name", 100),
+      mr: optionalLocalizedText,
+    }),
+  }),
+  groom: z.object({
+    name: z.object({
+      en: requiredText("Groom's English name", 100),
+      mr: optionalLocalizedText,
+    }),
+  }),
+});
+
 export const createWeddingSchema = z
   .object({
-    couple: z.object({
-      bride: z.object({
-        name: z.object({
-          en: requiredText("Bride's English name", 100),
-          mr: optionalLocalizedText,
-        }),
-      }),
-      groom: z.object({
-        name: z.object({
-          en: requiredText("Groom's English name", 100),
-          mr: optionalLocalizedText,
-        }),
-      }),
-    }),
+    couple: coupleSchema,
     title: z.object({
       en: requiredText("Wedding title", 140),
       mr: optionalLocalizedText,
@@ -63,3 +65,27 @@ export const createWeddingSchema = z
   .strict();
 
 export type CreateWeddingInput = z.infer<typeof createWeddingSchema>;
+
+export const updateWeddingSchema = z
+  .object({
+    couple: coupleSchema,
+    title: z
+      .object({
+        en: requiredText("Wedding title", 140),
+      })
+      .strict(),
+    mainWeddingDate: calendarDateSchema,
+    timezone: timezoneSchema,
+    primaryVenue: z
+      .object({
+        city: z
+          .object({
+            en: requiredText("Wedding city or location", 120),
+          })
+          .strict(),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type UpdateWeddingInput = z.infer<typeof updateWeddingSchema>;

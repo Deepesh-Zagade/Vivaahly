@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const mocks = vi.hoisted(() => ({
   redirect: vi.fn(),
@@ -30,9 +31,9 @@ describe("organizer workspace routing", () => {
       membership: null,
     });
 
-    await expect(OrganizerWorkspacePage()).rejects.toThrow(
-      "redirect:/app/onboarding",
-    );
+    await expect(
+      OrganizerWorkspacePage({ searchParams: Promise.resolve({}) }),
+    ).rejects.toThrow("redirect:/app/onboarding");
     expect(mocks.getWeddingService).not.toHaveBeenCalled();
   });
 
@@ -43,6 +44,10 @@ describe("organizer workspace routing", () => {
       role: "ADMIN",
     };
     const getWeddingForOrganizer = vi.fn().mockResolvedValue({
+      couple: {
+        bride: { name: { en: "Priya" } },
+        groom: { name: { en: "Deepesh" } },
+      },
       title: { en: "Deepesh & Priya" },
       mainWeddingDate: new Date("2027-02-14T00:00:00.000Z"),
       primaryVenue: { city: { en: "Pune, Maharashtra" } },
@@ -54,8 +59,81 @@ describe("organizer workspace routing", () => {
     });
     mocks.getWeddingService.mockResolvedValue({ getWeddingForOrganizer });
 
-    await expect(OrganizerWorkspacePage()).resolves.toBeDefined();
+    const markup = renderToStaticMarkup(
+      await OrganizerWorkspacePage({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(markup.match(/Deepesh &amp; Priya/g)).toHaveLength(1);
     expect(getWeddingForOrganizer).toHaveBeenCalledWith(membership);
     expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("keeps couple names as the primary heading and renders a custom title once", async () => {
+    const membership = {
+      id: "membership-1",
+      weddingId: "wedding-1",
+      role: "ADMIN",
+    };
+    mocks.requireCurrentOrganizer.mockResolvedValue({
+      user: { id: "user-1", name: "Deepesh" },
+      membership,
+    });
+    mocks.getWeddingService.mockResolvedValue({
+      getWeddingForOrganizer: vi.fn().mockResolvedValue({
+        couple: {
+          bride: { name: { en: "Priya" } },
+          groom: { name: { en: "Deepesh" } },
+        },
+        title: { en: "Our Forever Begins" },
+        mainWeddingDate: new Date("2027-02-14T00:00:00.000Z"),
+        primaryVenue: { city: { en: "Pune, Maharashtra" } },
+        timezone: "Asia/Kolkata",
+      }),
+    });
+
+    const markup = renderToStaticMarkup(
+      await OrganizerWorkspacePage({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(markup).toContain("Our Forever Begins");
+    expect(markup).toContain("Deepesh &amp; Priya");
+    expect(markup.indexOf("Our Forever Begins")).toBeLessThan(
+      markup.indexOf("Deepesh &amp; Priya"),
+    );
+  });
+
+  it("confirms a successful wedding-details redirect", async () => {
+    const membership = {
+      id: "membership-1",
+      weddingId: "wedding-1",
+      role: "ADMIN",
+    };
+    mocks.requireCurrentOrganizer.mockResolvedValue({
+      user: { id: "user-1", name: "Deepesh" },
+      membership,
+    });
+    mocks.getWeddingService.mockResolvedValue({
+      getWeddingForOrganizer: vi.fn().mockResolvedValue({
+        couple: {
+          bride: { name: { en: "Priya" } },
+          groom: { name: { en: "Deepesh" } },
+        },
+        title: { en: "Our Forever Begins" },
+        mainWeddingDate: new Date("2027-02-14T00:00:00.000Z"),
+        primaryVenue: { city: { en: "Pune, Maharashtra" } },
+        timezone: "Asia/Kolkata",
+      }),
+    });
+
+    const markup = renderToStaticMarkup(
+      await OrganizerWorkspacePage({
+        searchParams: Promise.resolve({
+          notice: "wedding-details-updated",
+        }),
+      }),
+    );
+
+    expect(markup).toContain("Wedding details updated successfully");
+    expect(markup).toContain('role="status"');
   });
 });

@@ -12,6 +12,7 @@ import {
   ActiveWeddingMembershipError,
   DuplicateMediaAccessKeyError,
   type CreateWeddingRecord,
+  type UpdateWeddingDetailsRecord,
   type WeddingRepository,
 } from "@/modules/wedding/wedding.repository";
 import type {
@@ -85,6 +86,17 @@ function isDuplicateKey(error: unknown, key: string) {
   if (!(error instanceof MongoServerError) || error.code !== 11_000) return false;
   const keyPattern = error.keyPattern as Record<string, number> | undefined;
   return Boolean(keyPattern?.[key]);
+}
+
+export function weddingDetailsSetFields(input: UpdateWeddingDetailsRecord) {
+  return {
+    couple: input.couple,
+    "title.en": input.titleEn,
+    mainWeddingDate: input.mainWeddingDate,
+    timezone: input.timezone,
+    "primaryVenue.city.en": input.primaryVenueCityEn,
+    updatedAt: input.updatedAt,
+  };
 }
 
 export class MongoWeddingRepository implements WeddingRepository {
@@ -188,6 +200,23 @@ export class MongoWeddingRepository implements WeddingRepository {
     } finally {
       await session.endSession();
     }
+  }
+
+  async updateWeddingDetails(
+    weddingId: string,
+    input: UpdateWeddingDetailsRecord,
+  ) {
+    if (!ObjectId.isValid(weddingId)) return null;
+
+    const wedding = await this.weddings.findOneAndUpdate(
+      { _id: new ObjectId(weddingId), status: "ACTIVE" },
+      {
+        $set: weddingDetailsSetFields(input),
+      },
+      { returnDocument: "after" },
+    );
+
+    return wedding ? mapWedding(wedding) : null;
   }
 }
 

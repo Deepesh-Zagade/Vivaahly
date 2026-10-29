@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireCurrentOrganizer } from "@/modules/auth/auth.server";
+import {
+  coupleDisplayName,
+  titleMatchesCoupleNames,
+} from "@/modules/wedding/wedding.presentation";
 import { getWeddingService } from "@/modules/wedding/wedding.server";
+import { WorkspaceSuccessNotice } from "@/app/(organizer)/app/workspace-success-notice";
 
 export const metadata: Metadata = {
   title: "Organizer workspace",
@@ -9,7 +15,14 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function OrganizerWorkspacePage() {
+type OrganizerWorkspacePageProps = {
+  searchParams: Promise<{ notice?: string | string[] }>;
+};
+
+export default async function OrganizerWorkspacePage({
+  searchParams,
+}: OrganizerWorkspacePageProps) {
+  const query = await searchParams;
   const organizer = await requireCurrentOrganizer();
 
   if (!organizer.membership) redirect("/app/onboarding");
@@ -23,6 +36,15 @@ export default async function OrganizerWorkspacePage() {
     year: "numeric",
     timeZone: "UTC",
   }).format(wedding.mainWeddingDate);
+  const coupleHeading = coupleDisplayName(
+    wedding.couple.groom.name.en,
+    wedding.couple.bride.name.en,
+  );
+  const hasCustomTitle = !titleMatchesCoupleNames(
+    wedding.title.en,
+    wedding.couple.groom.name.en,
+    wedding.couple.bride.name.en,
+  );
 
   return (
     <main className="flex-1 px-margin-mobile py-10 md:px-margin md:py-14">
@@ -38,13 +60,23 @@ export default async function OrganizerWorkspacePage() {
           Your wedding workspace is ready. Future planning features will build from this private wedding context.
         </p>
 
+        {query.notice === "wedding-details-updated" ? (
+          <WorkspaceSuccessNotice />
+        ) : null}
+
         <article className="relative mt-9 max-w-4xl overflow-hidden rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-[0_18px_45px_rgba(44,28,33,0.08)] sm:p-9">
           <div className="absolute inset-y-0 left-0 w-1 bg-primary" />
           <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
             <div>
               <p className="text-label-sm font-semibold uppercase tracking-[0.12em] text-secondary">Active wedding</p>
-              <h2 className="mt-2 font-headline-lg text-[2.2rem] leading-tight text-primary sm:text-[2.7rem]">{wedding.title.en}</h2>
-              {wedding.title.mr ? <p lang="mr" className="mt-1 text-body-md text-on-surface-variant">{wedding.title.mr}</p> : null}
+              {hasCustomTitle ? (
+                <p className="mt-3 font-headline-lg text-[1.65rem] italic leading-snug text-secondary sm:text-[1.9rem]">
+                  {wedding.title.en}
+                </p>
+              ) : null}
+              <h2 className={`${hasCustomTitle ? "mt-1" : "mt-2"} font-headline-lg text-[2.2rem] leading-tight text-primary sm:text-[2.7rem]`}>
+                {coupleHeading}
+              </h2>
             </div>
             <span className="self-start rounded-full bg-primary-fixed px-3 py-1.5 text-label-sm font-semibold uppercase tracking-wide text-on-primary-fixed">{organizer.membership.role}</span>
           </div>
@@ -54,11 +86,17 @@ export default async function OrganizerWorkspacePage() {
             <WorkspaceDetail label="Wedding location" value={wedding.primaryVenue.city.en} />
             <WorkspaceDetail label="Timezone" value={wedding.timezone} />
           </dl>
-        </article>
 
-        <div className="mt-6 max-w-4xl rounded-2xl border border-dashed border-outline-variant bg-surface-container-low p-5 text-body-md text-on-surface-variant">
-          Wedding events will be the next planning capability added to this workspace.
-        </div>
+          <div className="mt-7 flex border-t border-outline-variant/70 pt-5 sm:justify-end">
+            <Link
+              href="/app/settings"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-label-md font-semibold text-on-primary transition-colors hover:bg-primary-container sm:w-auto"
+            >
+              Edit wedding details
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </article>
       </section>
     </main>
   );
