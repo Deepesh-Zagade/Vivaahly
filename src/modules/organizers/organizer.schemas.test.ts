@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   acceptOrganizerInvitationSchema,
   createOrganizerInvitationSchema,
+  updateOrganizerMemberSchema,
 } from "@/modules/organizers/organizer.schemas";
 
 describe("organizer invitation schemas", () => {
@@ -21,6 +22,17 @@ describe("organizer invitation schemas", () => {
         role: "OWNER",
         weddingId: "caller-controlled",
       }).success,
+    ).toBe(false);
+  });
+
+  it("accepts only supported organizer role updates", () => {
+    expect(updateOrganizerMemberSchema.parse({ role: "ADMIN" })).toEqual({
+      role: "ADMIN",
+    });
+    expect(updateOrganizerMemberSchema.safeParse({ role: "OWNER" }).success).toBe(false);
+    expect(
+      updateOrganizerMemberSchema.safeParse({ role: "MANAGER", weddingId: "unsafe" })
+        .success,
     ).toBe(false);
   });
 

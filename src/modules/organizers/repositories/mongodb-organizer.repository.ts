@@ -14,10 +14,14 @@ import {
   OrganizerInvitationActiveMembershipError,
   OrganizerInvitationUnavailableError,
   PendingOrganizerInvitationError,
+  SelfOrganizerManagementError,
+  FinalOrganizerAdminError,
   type AcceptOrganizerInvitationRecord,
   type CreateOrganizerInvitationRecord,
   type OrganizerRepository,
+  type RemoveOrganizerMemberRecord,
   type RotateOrganizerInvitationRecord,
+  type UpdateOrganizerMemberRoleRecord,
 } from "@/modules/organizers/organizer.repository";
 import type { OrganizerInvitation } from "@/modules/organizers/organizer.types";
 import type { Wedding, WeddingMembership } from "@/modules/wedding/wedding.types";
@@ -32,6 +36,7 @@ type SessionDocument = {
 };
 type WeddingDocument = Omit<Wedding, "id" | "createdByUserId"> & {
   createdByUserId: ObjectId;
+  membershipVersion?: number;
 };
 type WeddingMemberDocument = Omit<WeddingMembership, "id" | "weddingId" | "userId"> & {
   weddingId: ObjectId;
@@ -314,6 +319,132 @@ export class MongoOrganizerRepository implements OrganizerRepository {
     return invitation ? mapInvitation(invitation) : null;
   }
 
+  async updateMemberRole(input: UpdateOrganizerMemberRoleRecord) {
+    if (
+      !ObjectId.isValid(input.actorMemberId) ||
+      !ObjectId.isValid(input.memberId) ||
+      !ObjectId.isValid(input.weddingId)
+    ) {
+      return null;
+    }
+    const actorMemberId = new ObjectId(input.actorMemberId);
+    const memberId = new ObjectId(input.memberId);
+    if (actorMemberId.equals(memberId)) throw new SelfOrganizerManagementError();
+    const session = this.client.startSession();
+    try {
+      return await session.withTransaction(async () => {
+        const weddingId = new ObjectId(input.weddingId);
+        const lockedWedding = await this.weddings.findOneAndUpdate(
+          { _id: weddingId, status: "ACTIVE" },
+          {
+            $inc: { membershipVersion: 1 },
+            $set: { updatedAt: input.updatedAt },
+          },
+          { session, returnDocument: "after" },
+        );
+        if (!lockedWedding) return null;
+
+        const member = await this.members.findOne(
+          {
+            _id: memberId,
+            weddingId,
+            status: "ACTIVE",
+          },
+          { session },
+        );
+        if (!member) return null;
+        if (member.role === input.role) return mapMembership(member);
+
+        if (member.role === "ADMIN" && input.role === "MANAGER") {
+          const adminCount = await this.members.countDocuments(
+            { weddingId, status: "ACTIVE", role: "ADMIN" },
+            { session },
+          );
+          if (adminCount <= 1) throw new FinalOrganizerAdminError();
+        }
+
+        const updated = await this.members.findOneAndUpdate(
+          {
+            _id: member._id,
+            weddingId,
+            status: "ACTIVE",
+            role: member.role,
+          },
+          { $set: { role: input.role, updatedAt: input.updatedAt } },
+          { session, returnDocument: "after" },
+        );
+        return updated ? mapMembership(updated) : null;
+      });
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  async removeMember(input: RemoveOrganizerMemberRecord) {
+    if (
+      !ObjectId.isValid(input.actorMemberId) ||
+      !ObjectId.isValid(input.memberId) ||
+      !ObjectId.isValid(input.weddingId)
+    ) {
+      return null;
+    }
+    const actorMemberId = new ObjectId(input.actorMemberId);
+    const memberId = new ObjectId(input.memberId);
+    if (actorMemberId.equals(memberId)) throw new SelfOrganizerManagementError();
+    const session = this.client.startSession();
+    try {
+      return await session.withTransaction(async () => {
+        const weddingId = new ObjectId(input.weddingId);
+        const lockedWedding = await this.weddings.findOneAndUpdate(
+          { _id: weddingId, status: "ACTIVE" },
+          {
+            $inc: { membershipVersion: 1 },
+            $set: { updatedAt: input.removedAt },
+          },
+          { session, returnDocument: "after" },
+        );
+        if (!lockedWedding) return null;
+
+        const member = await this.members.findOne(
+          {
+            _id: memberId,
+            weddingId,
+            status: "ACTIVE",
+          },
+          { session },
+        );
+        if (!member) return null;
+
+        if (member.role === "ADMIN") {
+          const adminCount = await this.members.countDocuments(
+            { weddingId, status: "ACTIVE", role: "ADMIN" },
+            { session },
+          );
+          if (adminCount <= 1) throw new FinalOrganizerAdminError();
+        }
+
+        const removed = await this.members.findOneAndUpdate(
+          {
+            _id: member._id,
+            weddingId,
+            status: "ACTIVE",
+          },
+          {
+            $set: {
+              status: "REMOVED",
+              removedAt: input.removedAt,
+              updatedAt: input.removedAt,
+            },
+          },
+          { session, returnDocument: "after" },
+        );
+        return removed ? mapMembership(removed) : null;
+      });
+    } finally {
+      await session.endSession();
+    }
+  }
+
   async acceptInvitation(input: AcceptOrganizerInvitationRecord) {
     const session = this.client.startSession();
     try {
@@ -328,6 +459,16 @@ export class MongoOrganizerRepository implements OrganizerRepository {
           { session },
         );
         if (!invitation) throw new OrganizerInvitationUnavailableError();
+
+        const lockedWedding = await this.weddings.findOneAndUpdate(
+          { _id: invitation.weddingId, status: "ACTIVE" },
+          {
+            $inc: { membershipVersion: 1 },
+            $set: { updatedAt: input.now },
+          },
+          { session, returnDocument: "after" },
+        );
+        if (!lockedWedding) throw new OrganizerInvitationUnavailableError();
 
         let user: WithId<UserDocument>;
         if (input.existingUserId) {
@@ -370,21 +511,49 @@ export class MongoOrganizerRepository implements OrganizerRepository {
         );
         if (activeMembership) throw new OrganizerInvitationActiveMembershipError();
 
-        const membershipId = new ObjectId();
-        const membershipDocument: WeddingMemberDocument = {
-          weddingId: invitation.weddingId,
-          userId: user._id,
-          role: invitation.role,
-          status: "ACTIVE",
-          joinedAt: input.now,
-          removedAt: null,
-          createdAt: input.now,
-          updatedAt: input.now,
-        };
-        await this.members.insertOne(
-          { _id: membershipId, ...membershipDocument },
+        const previousMembership = await this.members.findOne(
+          { weddingId: invitation.weddingId, userId: user._id },
           { session },
         );
+        const membershipId = previousMembership?._id ?? new ObjectId();
+        let membershipDocument: WeddingMemberDocument;
+        if (previousMembership) {
+          if (previousMembership.status !== "REMOVED") {
+            throw new OrganizerInvitationActiveMembershipError();
+          }
+          const reactivated = await this.members.findOneAndUpdate(
+            { _id: previousMembership._id, status: "REMOVED" },
+            {
+              $set: {
+                role: invitation.role,
+                status: "ACTIVE",
+                joinedAt: input.now,
+                removedAt: null,
+                updatedAt: input.now,
+              },
+            },
+            { session, returnDocument: "after" },
+          );
+          if (!reactivated) throw new OrganizerInvitationActiveMembershipError();
+          const { _id: _reactivatedId, ...reactivatedDocument } = reactivated;
+          void _reactivatedId;
+          membershipDocument = reactivatedDocument;
+        } else {
+          membershipDocument = {
+            weddingId: invitation.weddingId,
+            userId: user._id,
+            role: invitation.role,
+            status: "ACTIVE",
+            joinedAt: input.now,
+            removedAt: null,
+            createdAt: input.now,
+            updatedAt: input.now,
+          };
+          await this.members.insertOne(
+            { _id: membershipId, ...membershipDocument },
+            { session },
+          );
+        }
 
         if (input.newSession) {
           await this.sessions.insertOne(

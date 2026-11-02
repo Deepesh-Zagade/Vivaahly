@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthenticatedOrganizer, OrganizerUser } from "@/modules/auth/auth.types";
 import {
+  FinalOrganizerAdminError,
   OrganizerInvitationActiveMembershipError,
   PendingOrganizerInvitationError,
   type OrganizerInvitationMailer,
@@ -107,6 +108,28 @@ function makeDependencies() {
     })),
     revokeInvitation: vi.fn().mockResolvedValue(true),
     rotateInvitation: vi.fn().mockResolvedValue(invitation),
+    updateMemberRole: vi.fn().mockImplementation(async (record) => ({
+      id: "690092d1b617241033eaa666",
+      weddingId: wedding.id,
+      userId: invitedUser.id,
+      role: record.role,
+      status: "ACTIVE",
+      joinedAt: now,
+      removedAt: null,
+      createdAt: now,
+      updatedAt: record.updatedAt,
+    })),
+    removeMember: vi.fn().mockResolvedValue({
+      id: "690092d1b617241033eaa666",
+      weddingId: wedding.id,
+      userId: invitedUser.id,
+      role: "MANAGER",
+      status: "REMOVED",
+      joinedAt: now,
+      removedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    }),
     acceptInvitation: vi.fn().mockResolvedValue({
       invitation: { ...invitation, status: "ACCEPTED", expiresAt: null },
       membership: {
@@ -224,6 +247,89 @@ describe("OrganizerService", () => {
         role: "MANAGER",
       }),
     ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("allows an Admin to promote, demote, and remove another organizer", async () => {
+    const { repository, mailer } = makeDependencies();
+    const service = makeService(repository, mailer);
+    const memberId = "690092d1b617241033eaa666";
+
+    await service.updateMemberRole(organizer, memberId, { role: "ADMIN" });
+    expect(repository.updateMemberRole).toHaveBeenCalledWith({
+      weddingId: wedding.id,
+      actorMemberId: membership.id,
+      memberId,
+      role: "ADMIN",
+      updatedAt: now,
+    });
+
+    await service.updateMemberRole(organizer, memberId, { role: "MANAGER" });
+    await service.removeMember(organizer, memberId);
+    expect(repository.removeMember).toHaveBeenCalledWith({
+      weddingId: wedding.id,
+      actorMemberId: membership.id,
+      memberId,
+      removedAt: now,
+    });
+  });
+
+  it("blocks Manager membership changes and all self-management", async () => {
+    const { repository, mailer } = makeDependencies();
+    const service = makeService(repository, mailer);
+    const managerOrganizer = {
+      ...organizer,
+      membership: { ...membership, role: "MANAGER" as const },
+    };
+
+    await expect(
+      service.updateMemberRole(managerOrganizer, "another-member", { role: "ADMIN" }),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(
+      service.updateMemberRole(organizer, membership.id, { role: "MANAGER" }),
+    ).rejects.toMatchObject({
+      status: 409,
+      details: { reason: "SELF_MANAGEMENT_NOT_ALLOWED" },
+    });
+    await expect(
+      service.removeMember(organizer, membership.id),
+    ).rejects.toMatchObject({
+      status: 409,
+      details: { reason: "SELF_MANAGEMENT_NOT_ALLOWED" },
+    });
+    await expect(
+      service.updateMemberRole(organizer, membership.id.toUpperCase(), { role: "MANAGER" }),
+    ).rejects.toMatchObject({
+      status: 409,
+      details: { reason: "SELF_MANAGEMENT_NOT_ALLOWED" },
+    });
+    await expect(
+      service.removeMember(organizer, membership.id.toUpperCase()),
+    ).rejects.toMatchObject({
+      status: 409,
+      details: { reason: "SELF_MANAGEMENT_NOT_ALLOWED" },
+    });
+    expect(repository.updateMemberRole).not.toHaveBeenCalled();
+    expect(repository.removeMember).not.toHaveBeenCalled();
+  });
+
+  it("maps final-Admin protection to a controlled conflict", async () => {
+    const { repository, mailer } = makeDependencies();
+    vi.mocked(repository.updateMemberRole).mockRejectedValueOnce(
+      new FinalOrganizerAdminError(),
+    );
+    vi.mocked(repository.removeMember).mockRejectedValueOnce(
+      new FinalOrganizerAdminError(),
+    );
+    const service = makeService(repository, mailer);
+    const memberId = "690092d1b617241033eaa666";
+
+    await expect(
+      service.updateMemberRole(organizer, memberId, { role: "MANAGER" }),
+    ).rejects.toMatchObject({ status: 409, details: { reason: "FINAL_ADMIN" } });
+    await expect(service.removeMember(organizer, memberId)).rejects.toMatchObject({
+      status: 409,
+      details: { reason: "FINAL_ADMIN" },
+    });
   });
 
   it.each([

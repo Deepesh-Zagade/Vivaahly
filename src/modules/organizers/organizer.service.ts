@@ -5,12 +5,15 @@ import { ORGANIZER_SESSION_DURATION_SECONDS } from "@/modules/auth/auth.service"
 import type {
   AcceptOrganizerInvitationInput,
   CreateOrganizerInvitationInput,
+  UpdateOrganizerMemberInput,
 } from "@/modules/organizers/organizer.schemas";
 import {
+  FinalOrganizerAdminError,
   OrganizerInvitationAccountExistsError,
   OrganizerInvitationActiveMembershipError,
   OrganizerInvitationUnavailableError,
   PendingOrganizerInvitationError,
+  SelfOrganizerManagementError,
   type OrganizerInvitationMailer,
   type OrganizerRepository,
 } from "@/modules/organizers/organizer.repository";
@@ -33,6 +36,7 @@ import { hashPassword } from "@/server/security/password";
 import { createSessionToken } from "@/server/security/session-token";
 
 const INVITATION_DURATION_MS = 7 * 24 * 60 * 60 * 1_000;
+const MONGO_OBJECT_ID_PATTERN = /^[0-9a-f]{24}$/i;
 
 type OrganizerServiceDependencies = {
   repository: OrganizerRepository;
@@ -46,9 +50,27 @@ function assertAdmin(organizer: AuthenticatedOrganizer) {
     throw conflictError("Create a wedding before managing organizers.");
   }
   if (organizer.membership.role !== "ADMIN") {
-    throw forbiddenError("Only wedding Admins can manage organizer invitations.");
+    throw forbiddenError("Only wedding Admins can manage organizers.");
   }
   return organizer.membership;
+}
+
+function rethrowMembershipError(error: unknown): never {
+  if (error instanceof SelfOrganizerManagementError) {
+    throw conflictError("You cannot manage your own organizer membership.", {
+      reason: "SELF_MANAGEMENT_NOT_ALLOWED",
+    });
+  }
+  if (error instanceof FinalOrganizerAdminError) {
+    throw conflictError("Every wedding must retain at least one Admin.", {
+      reason: "FINAL_ADMIN",
+    });
+  }
+  throw error;
+}
+
+function canonicalMemberId(memberId: string) {
+  return MONGO_OBJECT_ID_PATTERN.test(memberId) ? memberId.toLowerCase() : memberId;
 }
 
 function maskEmail(email: string) {
@@ -239,6 +261,55 @@ export class OrganizerService {
       expiresAt,
     });
     return invitation;
+  }
+
+  async updateMemberRole(
+    organizer: AuthenticatedOrganizer,
+    memberId: string,
+    input: UpdateOrganizerMemberInput,
+  ) {
+    const membership = assertAdmin(organizer);
+    const targetMemberId = canonicalMemberId(memberId);
+    if (targetMemberId === canonicalMemberId(membership.id)) {
+      throw conflictError("You cannot change your own organizer role.", {
+        reason: "SELF_MANAGEMENT_NOT_ALLOWED",
+      });
+    }
+    try {
+      const updated = await this.repository.updateMemberRole({
+        weddingId: membership.weddingId,
+        actorMemberId: membership.id,
+        memberId: targetMemberId,
+        role: input.role,
+        updatedAt: this.now(),
+      });
+      if (!updated) throw notFoundError("Active organizer not found.");
+      return updated;
+    } catch (error) {
+      rethrowMembershipError(error);
+    }
+  }
+
+  async removeMember(organizer: AuthenticatedOrganizer, memberId: string) {
+    const membership = assertAdmin(organizer);
+    const targetMemberId = canonicalMemberId(memberId);
+    if (targetMemberId === canonicalMemberId(membership.id)) {
+      throw conflictError("You cannot remove yourself from the wedding workspace.", {
+        reason: "SELF_MANAGEMENT_NOT_ALLOWED",
+      });
+    }
+    try {
+      const removed = await this.repository.removeMember({
+        weddingId: membership.weddingId,
+        actorMemberId: membership.id,
+        memberId: targetMemberId,
+        removedAt: this.now(),
+      });
+      if (!removed) throw notFoundError("Active organizer not found.");
+      return removed;
+    } catch (error) {
+      rethrowMembershipError(error);
+    }
   }
 
   async getInvitationAccess(rawToken: string, organizer: AuthenticatedOrganizer | null) {

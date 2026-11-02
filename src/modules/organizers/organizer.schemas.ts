@@ -36,9 +36,18 @@ export const acceptOrganizerInvitationSchema = z
     }
   });
 
+export const updateOrganizerMemberSchema = z
+  .object({
+    role: z.enum(["ADMIN", "MANAGER"]),
+  })
+  .strict();
+
 export type CreateOrganizerInvitationInput = z.infer<
   typeof createOrganizerInvitationSchema
 >;
 export type AcceptOrganizerInvitationInput = z.infer<
   typeof acceptOrganizerInvitationSchema
+>;
+export type UpdateOrganizerMemberInput = z.infer<
+  typeof updateOrganizerMemberSchema
 >;

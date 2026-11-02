@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { UiIcon, type UiIconName } from "@/components/ui-icon";
 import { createOrganizerInvitationSchema } from "@/modules/organizers/organizer.schemas";
 import { fetchWithTimeout, RequestTimeoutError } from "@/shared/http/fetch-with-timeout";
@@ -9,6 +9,7 @@ import { fetchWithTimeout, RequestTimeoutError } from "@/shared/http/fetch-with-
 type Member = { id: string; userId: string; name: string; email: string; role: "ADMIN" | "MANAGER"; joinedAt: string };
 type Invitation = { id: string; email: string; role: "ADMIN" | "MANAGER"; status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED"; expiresAt: string | null; createdAt: string };
 type ApiError = { error?: { code?: string; message?: string; details?: { fieldErrors?: Record<string, string[]> } } };
+type MemberAction = { memberId: string; type: "role" | "remove"; nextRole?: "ADMIN" | "MANAGER" };
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
@@ -29,15 +30,27 @@ export function OrganizerManagement({ currentUserId, canManage, members, invitat
   const inviteDialogRef = useRef<HTMLDialogElement>(null);
   const inviteFormRef = useRef<HTMLFormElement>(null);
   const revokeDialogRef = useRef<HTMLDialogElement>(null);
+  const memberDialogRef = useRef<HTMLDialogElement>(null);
+  const lastReconciliationAtRef = useRef(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [recentlyResentId, setRecentlyResentId] = useState<string | null>(null);
   const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
+  const [confirmMemberAction, setConfirmMemberAction] = useState<MemberAction | null>(null);
+  const [openMemberMenuId, setOpenMemberMenuId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const invitationToRevoke = invitations.find((invitation) => invitation.id === confirmRevokeId);
+  const memberToManage = members.find((member) => member.id === confirmMemberAction?.memberId);
+
+  const refreshAuthoritativeState = useCallback((force = false) => {
+    const now = Date.now();
+    if (!force && now - lastReconciliationAtRef.current < 500) return;
+    lastReconciliationAtRef.current = now;
+    router.refresh();
+  }, [router]);
 
   useEffect(() => {
     const dialog = inviteDialogRef.current;
@@ -54,10 +67,72 @@ export function OrganizerManagement({ currentUserId, canManage, members, invitat
   }, [confirmRevokeId]);
 
   useEffect(() => {
+    const dialog = memberDialogRef.current;
+    if (!dialog) return;
+    if (confirmMemberAction && !dialog.open) dialog.showModal();
+    if (!confirmMemberAction && dialog.open) dialog.close();
+  }, [confirmMemberAction]);
+
+  useEffect(() => {
+    function reconcileOnFocus() {
+      refreshAuthoritativeState();
+    }
+
+    function reconcileOnVisibilityChange() {
+      if (document.visibilityState === "visible") refreshAuthoritativeState();
+    }
+
+    window.addEventListener("focus", reconcileOnFocus);
+    document.addEventListener("visibilitychange", reconcileOnVisibilityChange);
+    return () => {
+      window.removeEventListener("focus", reconcileOnFocus);
+      document.removeEventListener("visibilitychange", reconcileOnVisibilityChange);
+    };
+  }, [refreshAuthoritativeState]);
+
+  useEffect(() => {
+    if (!openMemberMenuId) return;
+
+    function closeMenuOnOutsideClick(event: PointerEvent) {
+      if (!(event.target instanceof Element) || !event.target.closest("[data-member-menu]")) {
+        setOpenMemberMenuId(null);
+      }
+    }
+
+    function closeMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpenMemberMenuId(null);
+    }
+
+    document.addEventListener("pointerdown", closeMenuOnOutsideClick);
+    document.addEventListener("keydown", closeMenuOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMenuOnOutsideClick);
+      document.removeEventListener("keydown", closeMenuOnEscape);
+    };
+  }, [openMemberMenuId]);
+
+  useEffect(() => {
+    if (canManage) return;
+    const timer = window.setTimeout(() => {
+      setDialogOpen(false);
+      setConfirmRevokeId(null);
+      setConfirmMemberAction(null);
+      setOpenMemberMenuId(null);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [canManage]);
+
+  useEffect(() => {
     if (!message) return;
     const timer = window.setTimeout(() => setMessage(null), 5000);
     return () => window.clearTimeout(timer);
   }, [message]);
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(null), 7000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
 
   useEffect(() => {
     if (!recentlyResentId) return;
@@ -105,20 +180,23 @@ export function OrganizerManagement({ currentUserId, canManage, members, invitat
         if (result.error?.code === "EXTERNAL_SERVICE_ERROR") {
           setDialogOpen(false);
           setError(result.error.message ?? "The invitation was saved, but email delivery could not be confirmed.");
-          router.refresh();
+          refreshAuthoritativeState(true);
           return;
         }
         setError(result.error?.message ?? "Could not send this invitation.");
+        if (response.status === 403) setDialogOpen(false);
+        refreshAuthoritativeState(true);
         return;
       }
       invitationForm.reset();
       setDialogOpen(false);
       setMessage("Invitation sent successfully. They have seven days to accept.");
-      router.refresh();
+      refreshAuthoritativeState(true);
     } catch (requestError) {
       setError(requestError instanceof RequestTimeoutError
         ? "The invitation request took too long. Please check the pending list before trying again."
         : "Could not reach Vivaahly. Please try again.");
+      refreshAuthoritativeState(true);
     } finally {
       setPending(false);
     }
@@ -135,14 +213,58 @@ export function OrganizerManagement({ currentUserId, canManage, members, invitat
       if (!response.ok) {
         const result = (await response.json()) as ApiError;
         setError(result.error?.message ?? `Could not ${action} this invitation.`);
+        setConfirmRevokeId(null);
+        refreshAuthoritativeState(true);
         return;
       }
       setConfirmRevokeId(null);
       if (action === "resend") setRecentlyResentId(id);
       setMessage(action === "resend" ? "A fresh invitation link was sent." : "Invitation revoked.");
-      router.refresh();
+      refreshAuthoritativeState(true);
     } catch {
       setError(`Could not ${action} this invitation. Please try again.`);
+      setConfirmRevokeId(null);
+      refreshAuthoritativeState(true);
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function manageMember(action: MemberAction) {
+    setActionId(action.memberId);
+    setError(null);
+    try {
+      const response = await fetchWithTimeout(`/api/v1/members/${action.memberId}`, {
+        method: action.type === "remove" ? "DELETE" : "PATCH",
+        ...(action.type === "role"
+          ? {
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ role: action.nextRole }),
+            }
+          : {}),
+      });
+      if (!response.ok) {
+        const result = (await response.json()) as ApiError;
+        setError(result.error?.message ?? "Could not update this organizer.");
+        setConfirmMemberAction(null);
+        refreshAuthoritativeState(true);
+        return;
+      }
+      setConfirmMemberAction(null);
+      setMessage(
+        action.type === "remove"
+          ? "Organizer removed from this wedding."
+          : `Organizer role changed to ${action.nextRole === "ADMIN" ? "Admin" : "Manager"}.`,
+      );
+      refreshAuthoritativeState(true);
+    } catch (requestError) {
+      setError(
+        requestError instanceof RequestTimeoutError
+          ? "The organizer update took too long. Please refresh before trying again."
+          : "Could not update this organizer. Please try again.",
+      );
+      setConfirmMemberAction(null);
+      refreshAuthoritativeState(true);
     } finally {
       setActionId(null);
     }
@@ -183,14 +305,65 @@ export function OrganizerManagement({ currentUserId, canManage, members, invitat
             const accent = isCurrentUser ? "bg-primary" : member.role === "ADMIN" ? "bg-secondary" : "bg-outline-variant";
             const avatar = isCurrentUser ? "bg-primary text-on-primary" : member.role === "ADMIN" ? "bg-secondary-fixed text-on-secondary-fixed" : "bg-surface-container-highest text-on-surface";
             return (
-              <li key={member.id} className="relative flex min-w-0 items-start gap-3 overflow-hidden rounded-xl bg-surface-container-low p-4 transition-colors hover:bg-surface-container">
-                <span className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-title-md font-semibold shadow-sm ${avatar}`}>{initials(member.name)}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5"><p className="break-words text-title-md font-semibold text-on-surface">{member.name}</p>{isCurrentUser ? <span className="rounded-full bg-primary-fixed px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-on-primary-fixed">You</span> : null}<RoleBadge role={member.role} /></div>
-                  <p className="mt-1 break-all text-body-sm text-on-surface-variant">{member.email}</p>
-                  <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-on-surface-variant/80"><UiIcon name="calendar-check" className="h-[15px] w-[15px]" />Joined {formatDate(member.joinedAt)}</p>
+              <li key={member.id} className={`relative min-h-[148px] min-w-0 rounded-xl bg-surface-container-low p-4 transition-colors hover:bg-surface-container ${openMemberMenuId === member.id ? "z-20" : ""}`}>
+                <span className={`absolute inset-y-0 left-0 w-1 rounded-l-xl ${accent}`} />
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-title-md font-semibold shadow-sm ${avatar}`}>{initials(member.name)}</span>
+                  <div className={`min-w-0 flex-1 ${canManage && !isCurrentUser ? "pr-10" : ""}`}>
+                    <div className="flex flex-wrap items-center gap-1.5"><p className="break-words text-title-md font-semibold text-on-surface">{member.name}</p>{isCurrentUser ? <span className="rounded-full bg-primary-fixed px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-on-primary-fixed">You</span> : null}<RoleBadge role={member.role} /></div>
+                    <p className="mt-1 break-all text-body-sm text-on-surface-variant">{member.email}</p>
+                    <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-on-surface-variant/80"><UiIcon name="calendar-check" className="h-[15px] w-[15px]" />Joined {formatDate(member.joinedAt)}</p>
+                  </div>
                 </div>
+                {canManage && !isCurrentUser ? (
+                  <div className="group/settings absolute right-3.5 top-3.5 z-20" data-member-menu>
+                    <button
+                      type="button"
+                      disabled={actionId === member.id}
+                      aria-label={`Organizer settings for ${member.name}`}
+                      aria-describedby={`member-settings-tooltip-${member.id}`}
+                      aria-haspopup="menu"
+                      aria-expanded={openMemberMenuId === member.id}
+                      aria-controls={`member-menu-${member.id}`}
+                      onClick={() => setOpenMemberMenuId((current) => current === member.id ? null : member.id)}
+                      className="group/gear flex h-10 w-10 items-center justify-center rounded-xl border border-primary/15 bg-surface-container-lowest text-primary shadow-sm transition-all hover:bg-primary-fixed/30 focus-visible:bg-primary-fixed/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+                    >
+                      <UiIcon name="settings" className="h-5 w-5 transition-transform duration-200 group-hover/gear:rotate-[25deg] group-focus-visible/gear:rotate-[25deg]" />
+                    </button>
+                    {openMemberMenuId !== member.id ? (
+                      <span id={`member-settings-tooltip-${member.id}`} role="tooltip" className="pointer-events-none absolute bottom-full right-0 z-40 mb-1.5 hidden whitespace-nowrap rounded-lg bg-inverse-surface px-2.5 py-1 text-[12px] font-medium text-inverse-on-surface shadow-md group-hover/settings:block group-focus-within/settings:block">Organizer settings</span>
+                    ) : null}
+                    {openMemberMenuId === member.id ? (
+                      <div id={`member-menu-${member.id}`} role="menu" aria-label={`Organizer options for ${member.name}`} className="absolute right-0 top-full z-30 mt-1.5 w-[210px] rounded-xl border border-primary/15 bg-surface-container-lowest p-1.5 text-left shadow-lg">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setOpenMemberMenuId(null);
+                            setConfirmMemberAction({ memberId: member.id, type: "role", nextRole: member.role === "ADMIN" ? "MANAGER" : "ADMIN" });
+                          }}
+                          className="flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-body-sm font-medium text-on-surface transition-colors hover:bg-primary/5 focus-visible:bg-primary/5 focus-visible:outline-none"
+                        >
+                          <UiIcon name={member.role === "ADMIN" ? "manager" : "admin"} className={`h-[19px] w-[19px] ${member.role === "ADMIN" ? "text-secondary" : "text-primary"}`} />
+                          Make {member.role === "ADMIN" ? "Manager" : "Admin"}
+                        </button>
+                        <div className="mx-2 my-1 border-t border-primary/10" />
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setOpenMemberMenuId(null);
+                            setConfirmMemberAction({ memberId: member.id, type: "remove" });
+                          }}
+                          className="flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-body-sm font-medium text-error transition-colors hover:bg-error/5 focus-visible:bg-error/5 focus-visible:outline-none"
+                        >
+                          <UiIcon name="account-off" className="h-[19px] w-[19px]" />
+                          Remove organizer
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </li>
             );
           })}
@@ -252,6 +425,22 @@ export function OrganizerManagement({ currentUserId, canManage, members, invitat
               <div className="flex w-full items-center gap-3 sm:w-auto"><button type="button" onClick={closeDialog} disabled={pending} className="min-h-11 w-1/2 rounded-xl border border-outline-variant px-5 py-2.5 text-title-md font-semibold text-on-surface transition-colors hover:bg-surface-container sm:w-auto">Cancel</button><button type="submit" disabled={pending} className="inline-flex min-h-11 w-1/2 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-title-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container disabled:cursor-wait disabled:opacity-60 sm:w-auto">{pending ? "Sending…" : "Send invitation"}<UiIcon name="send" className="h-[18px] w-[18px]" /></button></div>
             </div>
           </form>
+        </div>
+      </dialog>
+
+      <dialog ref={memberDialogRef} onClose={() => setConfirmMemberAction(null)} onCancel={(event) => { if (actionId) event.preventDefault(); }} className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border-0 bg-surface-container-lowest p-0 text-on-surface shadow-2xl backdrop:bg-on-surface/40 backdrop:backdrop-blur-sm">
+        <div className="space-y-5 p-6">
+          <div className="flex items-start gap-3">
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${confirmMemberAction?.type === "remove" ? "bg-error-container text-error" : "bg-primary-fixed text-primary"}`}><UiIcon name={confirmMemberAction?.type === "remove" ? "account-off" : confirmMemberAction?.nextRole === "ADMIN" ? "admin" : "manager"} className="h-5 w-5" /></span>
+            <div>
+              <h3 className="text-[1.25rem] font-semibold">{confirmMemberAction?.type === "remove" ? "Remove this organizer?" : `Make ${memberToManage?.name ?? "this organizer"} a ${confirmMemberAction?.nextRole === "ADMIN" ? "Admin" : "Manager"}?`}</h3>
+              <p className="mt-1 text-body-md leading-6 text-on-surface-variant">{confirmMemberAction?.type === "remove" ? `${memberToManage?.name ?? "This organizer"} will immediately lose access to this wedding. Their account and historical activity will be preserved, and they can be invited again later.` : confirmMemberAction?.nextRole === "ADMIN" ? "Admins can invite, remove, promote, and demote other organizers. Only grant this role to someone you fully trust." : "They will keep normal wedding-planning access but will no longer be able to manage organizer membership."}</p>
+            </div>
+          </div>
+          <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+            <button type="button" disabled={Boolean(actionId)} onClick={() => setConfirmMemberAction(null)} className="min-h-10 rounded-xl bg-surface-container px-4 py-2.5 text-title-md font-semibold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-60">Cancel</button>
+            <button type="button" disabled={!confirmMemberAction || Boolean(actionId)} onClick={() => confirmMemberAction && manageMember(confirmMemberAction)} className={`min-h-10 rounded-xl px-5 py-2.5 text-title-md font-semibold shadow-sm transition-colors disabled:opacity-60 ${confirmMemberAction?.type === "remove" ? "bg-error text-on-error hover:bg-on-error-container" : "bg-primary text-on-primary hover:bg-primary-container"}`}>{actionId ? "Updating…" : confirmMemberAction?.type === "remove" ? "Remove organizer" : "Change role"}</button>
+          </div>
         </div>
       </dialog>
 

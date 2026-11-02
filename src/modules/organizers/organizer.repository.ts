@@ -13,6 +13,8 @@ export class PendingOrganizerInvitationError extends Error {}
 export class OrganizerInvitationUnavailableError extends Error {}
 export class OrganizerInvitationAccountExistsError extends Error {}
 export class OrganizerInvitationActiveMembershipError extends Error {}
+export class FinalOrganizerAdminError extends Error {}
+export class SelfOrganizerManagementError extends Error {}
 
 export type CreateOrganizerInvitationRecord = {
   weddingId: string;
@@ -50,6 +52,21 @@ export type AcceptOrganizerInvitationRecord = {
   };
 };
 
+export type UpdateOrganizerMemberRoleRecord = {
+  weddingId: string;
+  actorMemberId: string;
+  memberId: string;
+  role: WeddingMemberRole;
+  updatedAt: Date;
+};
+
+export type RemoveOrganizerMemberRecord = {
+  weddingId: string;
+  actorMemberId: string;
+  memberId: string;
+  removedAt: Date;
+};
+
 export interface OrganizerRepository {
   findWeddingById(weddingId: string): Promise<Wedding | null>;
   listActiveMembers(weddingId: string): Promise<OrganizerMemberSummary[]>;
@@ -62,6 +79,8 @@ export interface OrganizerRepository {
   createInvitation(input: CreateOrganizerInvitationRecord): Promise<OrganizerInvitation>;
   revokeInvitation(invitationId: string, weddingId: string, now: Date): Promise<boolean>;
   rotateInvitation(input: RotateOrganizerInvitationRecord): Promise<OrganizerInvitation | null>;
+  updateMemberRole(input: UpdateOrganizerMemberRoleRecord): Promise<WeddingMembership | null>;
+  removeMember(input: RemoveOrganizerMemberRecord): Promise<WeddingMembership | null>;
   acceptInvitation(input: AcceptOrganizerInvitationRecord): Promise<AcceptedOrganizerInvitation>;
 }
 
