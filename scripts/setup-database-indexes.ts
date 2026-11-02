@@ -1,5 +1,6 @@
 import { ensureAuthIndexes } from "../src/modules/auth/repositories/mongodb-auth.repository";
 import { ensureWeddingIndexes } from "../src/modules/wedding/repositories/mongodb-wedding.repository";
+import { ensureOrganizerIndexes } from "../src/modules/organizers/repositories/mongodb-organizer.repository";
 import {
   closeMongoClient,
   getMongoDatabase,
@@ -7,8 +8,12 @@ import {
 
 async function main() {
   const database = await getMongoDatabase();
-  await Promise.all([ensureAuthIndexes(database), ensureWeddingIndexes(database)]);
-  console.info("Vivaahly authentication and wedding indexes are ready.");
+  await Promise.all([
+    ensureAuthIndexes(database),
+    ensureWeddingIndexes(database),
+    ensureOrganizerIndexes(database),
+  ]);
+  console.info("Vivaahly authentication, wedding, and organizer indexes are ready.");
 }
 
 async function run() {

@@ -89,6 +89,12 @@ export default async function OrganizerWorkspacePage({
 
           <div className="mt-7 flex border-t border-outline-variant/70 pt-5 sm:justify-end">
             <Link
+              href="/app/organizers"
+              className="mr-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-container px-5 py-2.5 text-label-md font-semibold text-on-surface transition-colors hover:bg-surface-container-high sm:w-auto"
+            >
+              Wedding organizers
+            </Link>
+            <Link
               href="/app/settings"
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-label-md font-semibold text-on-primary transition-colors hover:bg-primary-container sm:w-auto"
             >

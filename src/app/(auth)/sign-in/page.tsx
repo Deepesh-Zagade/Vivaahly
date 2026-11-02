@@ -13,10 +13,12 @@ export const dynamic = "force-dynamic";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ registered?: string }>;
+  searchParams: Promise<{ registered?: string; returnTo?: string }>;
 }) {
-  if (await getCurrentOrganizer()) redirect("/app");
-
-  const { registered } = await searchParams;
-  return <AuthForm mode="sign-in" registered={registered === "1"} />;
+  const { registered, returnTo: requestedReturnTo } = await searchParams;
+  const returnTo = requestedReturnTo?.startsWith("/join/") && !requestedReturnTo.startsWith("//")
+    ? requestedReturnTo
+    : undefined;
+  if (await getCurrentOrganizer()) redirect(returnTo ?? "/app");
+  return <AuthForm mode="sign-in" registered={registered === "1"} returnTo={returnTo} />;
 }

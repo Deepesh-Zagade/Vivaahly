@@ -95,7 +95,7 @@ function Spinner() {
 const inputClassName =
   "w-full rounded-xl border border-transparent bg-surface-container-low py-3 pl-11 pr-4 text-body-md text-on-surface outline-none transition-all placeholder:text-outline focus:border-primary-container focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary-container/25 disabled:cursor-wait disabled:opacity-70";
 
-export function AuthForm({ mode, registered = false }: { mode: AuthMode; registered?: boolean }) {
+export function AuthForm({ mode, registered = false, returnTo }: { mode: AuthMode; registered?: boolean; returnTo?: string }) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
@@ -156,7 +156,7 @@ export function AuthForm({ mode, registered = false }: { mode: AuthMode; registe
       if (isSignUp) {
         router.push("/sign-in?registered=1");
       } else {
-        router.push("/app");
+        router.push(returnTo ?? "/app");
         router.refresh();
       }
     } catch (error) {
@@ -305,7 +305,7 @@ export function AuthForm({ mode, registered = false }: { mode: AuthMode; registe
 
         <div className="mt-6 border-t border-surface-container-highest pt-5 text-center">
           <Link
-            href={isSignUp ? "/sign-in" : "/sign-up"}
+            href={isSignUp ? (returnTo ? `/sign-in?returnTo=${encodeURIComponent(returnTo)}` : "/sign-in") : "/sign-up"}
             className="inline-flex items-center gap-1 text-label-md font-semibold text-primary no-underline transition-colors hover:text-primary-container"
           >
             {isSignUp ? "Already have an account? Sign in" : "New to Vivaahly? Start planning"}

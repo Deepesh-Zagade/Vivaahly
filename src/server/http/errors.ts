@@ -68,3 +68,11 @@ export function serviceUnavailableError(
     message,
   });
 }
+
+export function externalServiceError(message: string) {
+  return new ApplicationError({
+    code: "EXTERNAL_SERVICE_ERROR",
+    status: 502,
+    message,
+  });
+}

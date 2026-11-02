@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
-**Last updated:** 2026-10-28
-**Current phase:** Wedding creation, onboarding, and essential-details editing complete
+**Last updated:** 2026-11-02
+**Current phase:** Organizer invitation and acceptance vertical slice complete
 **Active branch:** `dev`
 
 ## Purpose
@@ -20,10 +20,11 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | Organizer authentication | Complete | Account creation, sign in, session restoration, protected `/app` access, and sign out are implemented as the first application vertical slice. |
 | Wedding onboarding | Complete | Authenticated organizers can create the Wedding tenant and become its initial Admin through the responsive `/app/onboarding` flow. |
 | Wedding details settings | Complete | Admins and Managers can update the essential onboarding details at `/app/settings` until the wedding's local date has passed. |
+| Organizer invitations | Complete | Admins can invite, resend, and revoke organizer invitations; invited family members can securely join through the responsive acceptance flow. |
 | Organizer application | In progress | `/app` resolves and displays the authoritative wedding context; planning features such as events, guests, and tasks remain unimplemented. |
 | Guest invitation experience | Not started | Invitation entry and invitation-scoped guest functionality have not been implemented. |
 | Media Hub | Not started | Media access and Media Hub functionality have not been implemented. |
-| Database and external providers | In progress | MongoDB native-driver infrastructure plus explicit authentication, wedding, and membership indexes are implemented. Cloudflare R2 and Resend remain deferred until their feature slices require them. |
+| Database and external providers | In progress | MongoDB native-driver infrastructure and explicit authentication, wedding, membership, and organizer-invitation indexes are implemented. Resend organizer-invitation delivery is implemented; Cloudflare R2 remains deferred. |
 
 ## Completed Milestones
 
@@ -231,14 +232,44 @@ Intentional limitations:
 - Editing the essential wedding details does not regenerate the readable wedding slug.
 - Post-wedding organizer and guest experiences are not disabled; only essential wedding-detail editing is locked.
 
+### 10. Organizer invitations and acceptance
+
+**Status:** Complete and verified
+
+Delivered:
+
+- A responsive, Stitch-aligned `/app/organizers` experience that lists active wedding organizers and gives Admins a focused invitation modal plus pending-invitation resend and revoke controls.
+- Admin-only organizer invitation mutations, while Managers can still see the people collaborating in their wedding workspace without receiving invitation-management authority.
+- Secure seven-day organizer invitations using cryptographically random bearer tokens, SHA-256 token hashes at rest, masked invitation email metadata, and tenant-scoped MongoDB lookups.
+- Resend email delivery through a server-only adapter using the HTTP API and idempotency keys, without adding an otherwise unnecessary SDK dependency. The application URL, API key, and verified sender are server-only environment configuration.
+- The responsive `/join/[token]` acceptance experience for new users, matching signed-in users, existing signed-out users, wrong-account sessions, successful acceptance, unavailable links, recoverable failures, and the V1 active-workspace conflict.
+- Corrected account-switch behavior: a wrong account signs out and returns to the same invitation; an active-workspace conflict cannot be bypassed by signing into an unrelated account.
+- Transactional invitation acceptance that revalidates the pending token, creates or resolves the organizer identity, enforces one active wedding membership, creates the membership, records acceptance, and creates the initial HttpOnly session for a new invited account.
+- Safe sign-in return routing restricted to internal `/join/[token]` paths so existing invited accounts return to their invitation after authentication.
+- API coverage for member listing; invitation creation, listing, revoke and resend; safe token metadata; and invitation acceptance. Organizer invitation indexes were added to the repeatable Atlas index setup.
+- Automated coverage for normalized email input, role validation, password/passphrase rules, raw-token/hash separation, Admin authorization, duplicate invitations, all invitation access states, new and existing account acceptance, replay/conflict handling, session cookies, tenant-field rejection, and same-origin protection.
+- Live Resend delivery through the verified Vivaahly domain, including the redesigned invitation email with wedding and couple context.
+- Manual browser QA for create, resend, revoke, new-account acceptance, existing-account sign-in return, wrong-account recovery, accepted-link stability, and unavailable-link presentation.
+- Clear resend success feedback with a temporary per-invitation cooldown, plus reliable invitation-modal reset after cancel, close, and successful completion.
+- Security and concurrency hardening that redacts bearer tokens from error logs, prevents an expired request from invalidating a concurrently rotated token, and requires an explicit public HTTPS application origin in production.
+
+Intentional limitations and remaining setup:
+
+- Organizer role changes and member removal remain outside this invitation slice; final-Admin protection will be implemented with that later membership-management increment.
+- The repository does not contain Resend credentials. Local email delivery requires `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `APP_BASE_URL` in the ignored `.env.local`; production requires an explicit public HTTPS `APP_BASE_URL` in deployment configuration.
+- If delivery cannot be confirmed after an invitation record is created, the pending invitation remains visible so an Admin can safely resend a rotated link.
+
 ## Current Verification State
 
-At the completion of the wedding-details settings work:
+At the completion of the organizer-invitation and acceptance work:
 
+- The organizer invitation implementation passed linting, type checking, and the complete 115-test suite across 27 files.
+- The repeatable Atlas index command created the organizer invitation token, wedding/email/status, pending-email uniqueness, and expiration indexes successfully.
+- Live Resend email delivery and end-to-end browser QA passed for the organizer invitation lifecycle, including accepted, revoked, wrong-account, and unavailable-link states.
 - Linting passed.
 - Type checking passed.
 - The production build passed using Next.js's webpack builder. Turbopack reached a Windows worker/CSS panic after the sandboxed run was retried with font-network access; the supported webpack build completed successfully.
-- The automated test suite passed with 83 tests covering authentication, password whitespace edge cases, wedding creation and updates, localized-title and venue-field preservation, title presentation, field-level correction feedback, redirected update confirmation, date-lock behavior, HTTP errors, persistent database-outage behavior, MongoDB client lifecycle, login membership contexts, cookie safety, operation ordering, request cancellation, route protection, same-origin protections, and organizer error-boundary recovery UI.
+- The automated test suite passed with 115 tests covering authentication, password whitespace edge cases, wedding creation and updates, localized-title and venue-field preservation, title presentation, field-level correction feedback, redirected update confirmation, date-lock behavior, HTTP errors, persistent database-outage behavior, MongoDB client lifecycle, login membership contexts, cookie safety, operation ordering, request cancellation, route protection, same-origin protections, organizer error-boundary recovery UI, and organizer-invitation security and concurrency boundaries.
 - The Atlas wedding and membership indexes were created successfully through the repeatable database-index command.
 - Initial temporary-account checks could not reach registration while the Atlas primary was unavailable. No wedding data was created by those attempts.
 - A live unknown-account login during the outage returned `503 SERVICE_UNAVAILABLE` in approximately 6.9 seconds and did not set a session cookie.
@@ -258,9 +289,9 @@ Run the repository scripts again after future implementation changes; this secti
 
 ## Current Implementation Boundary
 
-The repository now proves the project foundation, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, and essential wedding-detail editing. It does not yet contain wedding events, guest invitations and RSVP, planning modules, email delivery, media storage, or Media Hub access.
+The repository now proves the project foundation, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, and the organizer invitation/acceptance boundary. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. It does not yet contain wedding events, guest invitations and RSVP, planning modules, media storage, or Media Hub access.
 
-The recommended next milestone is organizer invitation and acceptance as a vertical slice so the initial Admin can begin collaborating with family members before planning modules are added.
+The recommended next milestone is a small organizer-membership management increment (role changes/removal with final-Admin protection) or the first collaborative planning vertical slice.
 
 ## Maintenance Rules
 

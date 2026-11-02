@@ -19,6 +19,13 @@ type ApiErrorContext = {
   startedAt: number;
 };
 
+function safePathname(request: Request) {
+  return new URL(request.url).pathname.replace(
+    /\/api\/v1\/organizer-invitations\/access\/[^/]+/g,
+    "/api/v1/organizer-invitations/access/[token]",
+  );
+}
+
 export function getRequestId(request: Request) {
   return request.headers.get("x-request-id") ?? `req_${randomUUID()}`;
 }
@@ -68,8 +75,9 @@ export function apiErrorResponse(
   requestId: string,
   context?: ApiErrorContext,
 ) {
+  const pathname = safePathname(request);
   const operation =
-    context?.operation ?? `${request.method} ${new URL(request.url).pathname}`;
+    context?.operation ?? `${request.method} ${pathname}`;
   const durationMs = context ? Date.now() - context.startedAt : undefined;
 
   if (error instanceof ApplicationError) {
@@ -119,7 +127,7 @@ export function apiErrorResponse(
     operation,
     durationMs,
     method: request.method,
-    pathname: new URL(request.url).pathname,
+    pathname,
     errorName: error instanceof Error ? error.name : "UnknownError",
     errorCode:
       error instanceof Error && "code" in error ? String(error.code) : undefined,

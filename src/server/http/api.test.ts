@@ -42,4 +42,32 @@ describe("apiErrorResponse", () => {
 
     log.mockRestore();
   });
+
+  it("redacts organizer invitation tokens from unexpected-error logs", () => {
+    const log = vi.spyOn(logger, "error").mockImplementation(() => undefined);
+    const rawToken = "secret-invitation-token";
+    const request = new Request(
+      `http://localhost/api/v1/organizer-invitations/access/${rawToken}/accept`,
+      { method: "POST" },
+    );
+
+    const response = apiErrorResponse(
+      new Error("Unexpected failure"),
+      request,
+      "req-redaction",
+    );
+
+    expect(response.status).toBe(500);
+    expect(log).toHaveBeenCalledWith(
+      "Unexpected API request failure",
+      expect.objectContaining({
+        operation:
+          "POST /api/v1/organizer-invitations/access/[token]/accept",
+        pathname: "/api/v1/organizer-invitations/access/[token]/accept",
+      }),
+    );
+    expect(JSON.stringify(log.mock.calls)).not.toContain(rawToken);
+
+    log.mockRestore();
+  });
 });
