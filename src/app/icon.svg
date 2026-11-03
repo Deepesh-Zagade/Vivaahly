@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <defs>
+    <linearGradient id="burgundy" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#701A31"/>
+      <stop offset="0.52" stop-color="#791C34"/>
+      <stop offset="1" stop-color="#5B1329"/>
+    </linearGradient>
+    <linearGradient id="terracotta" x1="0.85" y1="0" x2="0.15" y2="1">
+      <stop offset="0" stop-color="#D77960"/>
+      <stop offset="0.5" stop-color="#CA6F55"/>
+      <stop offset="1" stop-color="#AE5540"/>
+    </linearGradient>
+  </defs>
+  <rect width="108" height="108" rx="22" fill="#FFF8F4"/>
+  <g transform="translate(12 25) scale(.78)">
+    <path fill="url(#burgundy)" d="M0 1C10 1 20 0 28 2C41 6 48 22 53 39C57 52 53 66 58 74C53 69 49 60 44 52C35 37 26 22 18 14C13 7 7 3 0 1Z"/>
+    <path fill="url(#terracotta)" d="M108 1C98 1 90 2 82 7C72 14 67 27 64 39C61 50 56 64 58 74C63 69 68 62 72 53C78 39 86 24 94 16C98 9 103 4 108 1Z"/>
+  </g>
+</svg>
