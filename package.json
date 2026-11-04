@@ -2,9 +2,9 @@
   "name": "vivaahly",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@12.15.0",
+  "packageManager": "pnpm@10.34.9",
   "engines": {
-    "node": ">=20.19.0"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
