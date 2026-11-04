@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
 **Last updated:** 2026-11-04
-**Current phase:** Initial Vercel production deployment complete; production end-to-end QA next
+**Current phase:** Production and dev-branch QA deployments complete; next feature planning ready
 **Active branch:** `dev`
 
 ## Purpose
@@ -16,7 +16,7 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | --- | --- | --- |
 | Project scaffold | Complete | Full-stack Next.js modular-monolith foundation created with pnpm, TypeScript, App Router, Tailwind CSS, linting, type checking, and test foundations. |
 | Brand identity | Complete | The final two-stroke Vivaahly V mark, horizontal logo lockups, monochrome/reversed variants, and favicon/app icon are implemented under `public/brand` and `src/app/icon.svg`. |
-| Production deployment | Complete | Vivaahly is deployed on Vercel's Hobby plan using Node.js 22 and pnpm 10, with `main` as the automatic Production branch, isolated Production environment variables, and the verified `vivaahly.bond` domain. |
+| Deployment environments | Complete | Vivaahly Production runs from `main` at `vivaahly.bond` against `vivaahly_prod`; the public `dev`-branch QA environment runs at `qa.vivaahly.bond` against `vivaahly_dev`. Both use Node.js 22 and pinned pnpm 10. |
 | Marketing homepage | Complete | The Stitch-based Vivaahly homepage has been implemented as a responsive, static marketing experience, including verified CTA contrast and responsive Guest Logistics controls. |
 | Guest Logistics responsive correction | Complete | Guest-status filter controls were corrected so their labels remain contained and readable on small and medium screens. |
 | Organizer authentication | Complete | Account creation, sign in, session restoration, protected `/app` access, and sign out are implemented as the first application vertical slice. |
@@ -380,9 +380,35 @@ Verification:
 
 Remaining operational work:
 
-- Run manual Production QA for account creation, sign in/out, wedding onboarding and editing, organizer invitation email delivery, invitation acceptance, organizer role changes, and removal before treating Production as launch-ready.
-- Preview deployments still require a deliberate environment strategy before they are used for shared staging. Production configuration is complete and does not depend on Preview.
+- A manual Production smoke test passed for account registration, authentication, wedding management, organizer invitation email delivery and acceptance, and organizer management.
+- Continue running focused release QA before future Production promotions; this smoke pass does not replace regression testing for later feature changes.
 - The ignored `.env.atlas-prod` bridge file should be removed after confirming that its production credential is stored safely outside the repository and can be intentionally recovered or rotated.
+
+### 16. Dev-branch QA deployment
+
+**Status:** Complete
+
+Delivered:
+
+- Added `qa.vivaahly.bond` as a custom Vercel domain bound specifically to the `dev` Git branch Preview deployment.
+- Configured Preview environment variables restricted to `dev`, using the scoped development MongoDB credential, `vivaahly_dev`, QA application origin, Resend configuration, MongoDB recovery windows, and Corepack setting.
+- Preserved the Production aliases and environment: `vivaahly.bond`, `www.vivaahly.bond`, and `vivaahly.vercel.app` continue to resolve through Production and use `vivaahly_prod`.
+- Disabled Vercel Authentication for Preview deployments so incognito browsers and organizer invitation recipients can access the QA flow without a Vercel account. Vivaahly's own authentication and tenant authorization remain authoritative.
+- Rebuilt the `dev` Preview after applying its branch-scoped variables.
+
+Verification:
+
+- Vercel reports `qa.vivaahly.bond` as verified, correctly configured, and bound to `dev`.
+- The rebuilt Preview reached `READY` using Node.js 22.
+- Public unauthenticated requests to the QA homepage and a read-only database-backed invitation endpoint returned HTTP 200.
+- The QA API returned the expected unavailable state for an invalid token rather than a database-connectivity error.
+- Production continued returning HTTP 200 after the QA environment and access-policy changes.
+- Vercel metadata confirms every QA variable targets Preview and is restricted to the `dev` branch; MongoDB and Resend credentials remain secret values.
+
+Operational boundary:
+
+- Disabling Vercel Authentication makes generated Preview URLs for this project publicly reachable. Do not place Production credentials in Preview, and continue relying on Vivaahly's server-side authentication and authorization for protected application data.
+- Run user-flow QA at `qa.vivaahly.bond`; do not use `vivaahly.vercel.app` for QA because it is intentionally a Production alias.
 
 ## Current Verification State
 
@@ -398,6 +424,9 @@ At the completion of the initial Vercel production-deployment milestone:
 - The first Production deployment completed successfully and is publicly available at `https://vivaahly.bond`.
 - The apex domain serves HTTPS with HTTP 200, while `www.vivaahly.bond` permanently redirects to the canonical apex origin.
 - A read-only Production API smoke test reached MongoDB Atlas and returned the expected invitation-unavailable result without a database-availability error.
+- The public `qa.vivaahly.bond` environment is bound to `dev`, receives only `dev`-restricted Preview variables, and connects through the `vivaahly_dev` configuration.
+- A public QA homepage request and read-only database-backed API request returned HTTP 200 after Preview protection was deliberately disabled.
+- Manual Production smoke testing passed registration, authentication, wedding management, invitation email delivery and acceptance, and organizer management.
 
 - The finalized primary, monochrome, reversed, horizontal, and favicon SVG assets passed XML validation, and the repository passed type checking after the asset replacement.
 - The organizer invitation and membership-management implementation passed linting, type checking, and the complete 125-test suite across 28 files.
@@ -428,7 +457,7 @@ Run the repository scripts again after future implementation changes; this secti
 
 The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, and organizer membership management. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain wedding events, guest invitations and RSVP, planning modules, media storage, or Media Hub access.
 
-The recommended next milestone is a focused manual Production QA pass across authentication, wedding management, organizer invitations, email delivery, and membership controls. After that deployment gate passes, feature development can resume. A shared Preview/staging environment can be introduced later using the development database and a dedicated staging origin without changing the Production boundary.
+Production and QA deployment boundaries are now operational. The recommended next step is to run future feature and regression testing through `qa.vivaahly.bond`, promote only reviewed `dev` changes to `main`, and resume planning the next vertical product increment.
 
 ## Maintenance Rules
 
