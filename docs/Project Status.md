@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
 **Last updated:** 2026-11-04
-**Current phase:** Vercel runtime preparation complete; MongoDB Atlas production preparation next
+**Current phase:** MongoDB Atlas production preparation complete; Vercel project configuration next
 **Active branch:** `dev`
 
 ## Purpose
@@ -16,7 +16,7 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | --- | --- | --- |
 | Project scaffold | Complete | Full-stack Next.js modular-monolith foundation created with pnpm, TypeScript, App Router, Tailwind CSS, linting, type checking, and test foundations. |
 | Brand identity | Complete | The final two-stroke Vivaahly V mark, horizontal logo lockups, monochrome/reversed variants, and favicon/app icon are implemented under `public/brand` and `src/app/icon.svg`. |
-| Deployment readiness | In progress | The repository is pinned to Node.js 22 and Vercel-supported pnpm 10.34.9; deterministic installation, linting, type checking, 125 tests, and a clean production build pass. Atlas and Vercel production configuration remain pending. |
+| Deployment readiness | In progress | The repository runtime and package manager are pinned for Vercel, and isolated Atlas development and production databases are ready with least-privilege users and verified indexes. Vercel configuration, preview runtime QA, and domain connection remain pending. |
 | Marketing homepage | Complete | The Stitch-based Vivaahly homepage has been implemented as a responsive, static marketing experience, including verified CTA contrast and responsive Guest Logistics controls. |
 | Guest Logistics responsive correction | Complete | Guest-status filter controls were corrected so their labels remain contained and readable on small and medium screens. |
 | Organizer authentication | Complete | Account creation, sign in, session restoration, protected `/app` access, and sign out are implemented as the first application vertical slice. |
@@ -329,6 +329,31 @@ Intentional boundary:
 
 - Vivaahly is not deployed yet. MongoDB Atlas production configuration, Vercel environment variables, the preview deployment, runtime QA, and Hostinger domain connection remain subsequent deployment steps.
 
+### 14. MongoDB Atlas production preparation
+
+**Status:** Complete
+
+Delivered:
+
+- Retained the existing free Atlas cluster and separated environments through the `vivaahly_dev` and `vivaahly_prod` logical databases.
+- Created dedicated application database users with `readWrite` limited to their owning database and access restricted to the existing Vivaahly cluster.
+- Replaced the development application's former broad `atlasAdmin` credential with a scoped `vivaahly_dev` credential.
+- Updated MongoDB Compass to use the scoped development user and removed the obsolete broad database user.
+- Kept production credentials in the ignored, untracked `.env.atlas-prod` bridge file pending Vercel environment configuration; no database secret entered Git.
+- Initialized production through the repository-owned repeatable index script rather than inserting placeholder data manually.
+
+Verification:
+
+- The production credential authenticated with exactly `readWrite` on `vivaahly_prod`.
+- The empty production database contains `users`, `sessions`, `weddings`, `weddingMembers`, and `organizerInvitations`, with every required unique, lookup, partial, and TTL index present.
+- The new development credential authenticated with exactly `readWrite` on `vivaahly_dev`.
+- Existing development records remained readable, every expected development collection and index remained present, and manual sign-in and sign-out passed after restarting the development server.
+
+Intentional boundary:
+
+- The Atlas IP access list has not yet been broadened for Vercel's dynamic outbound addresses. That free-tier connectivity tradeoff will be applied immediately before preview runtime verification.
+- `.env.atlas-prod` remains temporary and must be deleted after the production values are securely configured and verified in Vercel.
+
 ## Current Verification State
 
 At the completion of the Vercel runtime-preparation milestone:
@@ -337,6 +362,8 @@ At the completion of the Vercel runtime-preparation milestone:
 - A pnpm frozen-lockfile installation passed after regenerating the lockfile with pnpm 10.
 - Linting, type checking, all 125 tests across 28 files, and the optimized Next.js production build passed.
 - `.env.local` remains ignored and untracked; no deployment secret was added to the repository.
+- Atlas development and production credentials now have `readWrite` only on their respective databases; the old broad `atlasAdmin` database user has been removed.
+- `vivaahly_prod` is empty and contains all five current application collections with every required index verified through the native MongoDB driver.
 
 - The finalized primary, monochrome, reversed, horizontal, and favicon SVG assets passed XML validation, and the repository passed type checking after the asset replacement.
 - The organizer invitation and membership-management implementation passed linting, type checking, and the complete 125-test suite across 28 files.
@@ -367,7 +394,7 @@ Run the repository scripts again after future implementation changes; this secti
 
 The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, and organizer membership management. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain wedding events, guest invitations and RSVP, planning modules, media storage, or Media Hub access.
 
-The recommended next milestone is to prepare the `vivaahly_prod` logical database and Vercel-safe Atlas access, then configure the Vercel project and complete preview runtime verification before connecting `vivaahly.bond`.
+The recommended next milestone is to create and configure the Vercel project, securely add preview and production environment variables, enable the required Atlas access immediately before deployment testing, and complete preview runtime verification before connecting `vivaahly.bond`.
 
 ## Maintenance Rules
 
