@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
 **Last updated:** 2026-11-04
-**Current phase:** MongoDB Atlas production preparation complete; Vercel project configuration next
+**Current phase:** Initial Vercel production deployment complete; production end-to-end QA next
 **Active branch:** `dev`
 
 ## Purpose
@@ -16,7 +16,7 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | --- | --- | --- |
 | Project scaffold | Complete | Full-stack Next.js modular-monolith foundation created with pnpm, TypeScript, App Router, Tailwind CSS, linting, type checking, and test foundations. |
 | Brand identity | Complete | The final two-stroke Vivaahly V mark, horizontal logo lockups, monochrome/reversed variants, and favicon/app icon are implemented under `public/brand` and `src/app/icon.svg`. |
-| Deployment readiness | In progress | The repository runtime and package manager are pinned for Vercel, and isolated Atlas development and production databases are ready with least-privilege users and verified indexes. Vercel configuration, preview runtime QA, and domain connection remain pending. |
+| Production deployment | Complete | Vivaahly is deployed on Vercel's Hobby plan using Node.js 22 and pnpm 10, with `main` as the automatic Production branch, isolated Production environment variables, and the verified `vivaahly.bond` domain. |
 | Marketing homepage | Complete | The Stitch-based Vivaahly homepage has been implemented as a responsive, static marketing experience, including verified CTA contrast and responsive Guest Logistics controls. |
 | Guest Logistics responsive correction | Complete | Guest-status filter controls were corrected so their labels remain contained and readable on small and medium screens. |
 | Organizer authentication | Complete | Account creation, sign in, session restoration, protected `/app` access, and sign out are implemented as the first application vertical slice. |
@@ -325,7 +325,7 @@ Verification:
 - The complete automated suite passed with 125 tests across 28 files.
 - The optimized Next.js 16.4.2 production build passed and compiled all current pages and Route Handlers successfully.
 
-Intentional boundary:
+Historical boundary at completion (resolved by milestone 15):
 
 - Vivaahly is not deployed yet. MongoDB Atlas production configuration, Vercel environment variables, the preview deployment, runtime QA, and Hostinger domain connection remain subsequent deployment steps.
 
@@ -349,14 +349,44 @@ Verification:
 - The new development credential authenticated with exactly `readWrite` on `vivaahly_dev`.
 - Existing development records remained readable, every expected development collection and index remained present, and manual sign-in and sign-out passed after restarting the development server.
 
-Intentional boundary:
+Historical boundary at completion:
 
 - The Atlas IP access list has not yet been broadened for Vercel's dynamic outbound addresses. That free-tier connectivity tradeoff will be applied immediately before preview runtime verification.
 - `.env.atlas-prod` remains temporary and must be deleted after the production values are securely configured and verified in Vercel.
 
+### 15. Initial Vercel production deployment
+
+**Status:** Complete
+
+Delivered:
+
+- Linked the repository to the `deepesh-zagades-projects/vivaahly` Vercel project under the intended `zagadedeepesh@gmail.com` account and Hobby plan.
+- Configured the Vercel project to use Node.js `22.x`, matching the repository runtime contract, and verified Corepack installation of pinned pnpm `10.34.9` during the remote build.
+- Added the required Production-only MongoDB, Resend, application-origin, timeout, and Corepack environment variables. Credentials are stored as Vercel secrets and remain absent from Git.
+- Kept the local-only `MONGODB_DNS_SERVERS` override out of Vercel and allowed Vercel to own `NODE_ENV`.
+- Connected `Deepesh-Zagade/Vivaahly`, set `main` as the Production branch, and enabled automatic Git deployments for future Production commits.
+- Deployed the exact pushed `origin/main` commit rather than the locally modified development working tree.
+- Connected and verified `vivaahly.bond` through Hostinger DNS using Vercel's recommended apex records.
+- Added `www.vivaahly.bond` and configured a permanent HTTP 308 redirect to the canonical `https://vivaahly.bond` origin.
+
+Verification:
+
+- Vercel completed dependency installation, the optimized Next.js build, TypeScript validation, static generation, and server-function packaging on Node.js 22.
+- The first Production deployment reached `READY` and was promoted successfully.
+- `https://vivaahly.bond/` and `/sign-in` returned public HTTP 200 responses over HTTPS.
+- `https://www.vivaahly.bond/` returned HTTP 308 to `https://vivaahly.bond/`.
+- A read-only invalid organizer-invitation token request returned the expected `UNAVAILABLE` domain state rather than `503`, proving the Vercel runtime can reach the production MongoDB database.
+- Vercel reports both apex and `www` domains as verified and correctly configured.
+
+Remaining operational work:
+
+- Run manual Production QA for account creation, sign in/out, wedding onboarding and editing, organizer invitation email delivery, invitation acceptance, organizer role changes, and removal before treating Production as launch-ready.
+- Preview deployments still require a deliberate environment strategy before they are used for shared staging. Production configuration is complete and does not depend on Preview.
+- The ignored `.env.atlas-prod` bridge file should be removed after confirming that its production credential is stored safely outside the repository and can be intentionally recovered or rotated.
+
 ## Current Verification State
 
-At the completion of the Vercel runtime-preparation milestone:
+At the completion of the initial Vercel production-deployment milestone:
 
 - Node.js is pinned to `22.x` and pnpm is pinned to `10.34.9` for predictable Vercel builds.
 - A pnpm frozen-lockfile installation passed after regenerating the lockfile with pnpm 10.
@@ -364,6 +394,10 @@ At the completion of the Vercel runtime-preparation milestone:
 - `.env.local` remains ignored and untracked; no deployment secret was added to the repository.
 - Atlas development and production credentials now have `readWrite` only on their respective databases; the old broad `atlasAdmin` database user has been removed.
 - `vivaahly_prod` is empty and contains all five current application collections with every required index verified through the native MongoDB driver.
+- The Vercel project uses Node.js `22.x`, pinned pnpm `10.34.9`, `main` as its Production branch, and automatic Git deployments.
+- The first Production deployment completed successfully and is publicly available at `https://vivaahly.bond`.
+- The apex domain serves HTTPS with HTTP 200, while `www.vivaahly.bond` permanently redirects to the canonical apex origin.
+- A read-only Production API smoke test reached MongoDB Atlas and returned the expected invitation-unavailable result without a database-availability error.
 
 - The finalized primary, monochrome, reversed, horizontal, and favicon SVG assets passed XML validation, and the repository passed type checking after the asset replacement.
 - The organizer invitation and membership-management implementation passed linting, type checking, and the complete 125-test suite across 28 files.
@@ -394,7 +428,7 @@ Run the repository scripts again after future implementation changes; this secti
 
 The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, and organizer membership management. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain wedding events, guest invitations and RSVP, planning modules, media storage, or Media Hub access.
 
-The recommended next milestone is to create and configure the Vercel project, securely add preview and production environment variables, enable the required Atlas access immediately before deployment testing, and complete preview runtime verification before connecting `vivaahly.bond`.
+The recommended next milestone is a focused manual Production QA pass across authentication, wedding management, organizer invitations, email delivery, and membership controls. After that deployment gate passes, feature development can resume. A shared Preview/staging environment can be introduced later using the development database and a dedicated staging origin without changing the Production boundary.
 
 ## Maintenance Rules
 
