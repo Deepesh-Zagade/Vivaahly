@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
-**Last updated:** 2026-11-03
-**Current phase:** Brand identity complete; Vercel deployment preparation next
+**Last updated:** 2026-11-04
+**Current phase:** Vercel runtime preparation complete; MongoDB Atlas production preparation next
 **Active branch:** `dev`
 
 ## Purpose
@@ -16,6 +16,7 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | --- | --- | --- |
 | Project scaffold | Complete | Full-stack Next.js modular-monolith foundation created with pnpm, TypeScript, App Router, Tailwind CSS, linting, type checking, and test foundations. |
 | Brand identity | Complete | The final two-stroke Vivaahly V mark, horizontal logo lockups, monochrome/reversed variants, and favicon/app icon are implemented under `public/brand` and `src/app/icon.svg`. |
+| Deployment readiness | In progress | The repository is pinned to Node.js 22 and Vercel-supported pnpm 10.34.9; deterministic installation, linting, type checking, 125 tests, and a clean production build pass. Atlas and Vercel production configuration remain pending. |
 | Marketing homepage | Complete | The Stitch-based Vivaahly homepage has been implemented as a responsive, static marketing experience, including verified CTA contrast and responsive Guest Logistics controls. |
 | Guest Logistics responsive correction | Complete | Guest-status filter controls were corrected so their labels remain contained and readable on small and medium screens. |
 | Organizer authentication | Complete | Account creation, sign in, session restoration, protected `/app` access, and sign out are implemented as the first application vertical slice. |
@@ -303,9 +304,39 @@ Verification:
 - Git diff validation passed.
 - A production-build attempt reached Next.js setup but could not clean `.next` because the active development server holds `.next/dev-launch.err.log`; the server was intentionally left running and this is an environment lock rather than a logo-asset failure.
 
+### 13. Vercel runtime preparation
+
+**Status:** Complete
+**Reference commit:** `48191f4` (`chore(deploy): prepare Vercel runtime`)
+
+Delivered:
+
+- Pinned the deployment runtime to Node.js `22.x` so Vercel does not silently select a newer major version.
+- Pinned the package manager to Vercel-supported pnpm `10.34.9` while preserving pnpm as the repository's only package manager.
+- Regenerated `pnpm-lock.yaml` with pnpm 10, removing pnpm 12's package-manager self-install metadata without changing the application's declared dependency versions.
+- Confirmed that `.env.local` remains ignored and untracked; deployment secrets have not been committed.
+- Stopped the local development server during native dependency relinking and production verification. It was not restarted as part of this milestone.
+
+Verification:
+
+- A frozen-lockfile installation passed using pnpm `10.34.9`.
+- Linting passed.
+- Type checking passed.
+- The complete automated suite passed with 125 tests across 28 files.
+- The optimized Next.js 16.4.2 production build passed and compiled all current pages and Route Handlers successfully.
+
+Intentional boundary:
+
+- Vivaahly is not deployed yet. MongoDB Atlas production configuration, Vercel environment variables, the preview deployment, runtime QA, and Hostinger domain connection remain subsequent deployment steps.
+
 ## Current Verification State
 
-At the completion of the final brand-identity implementation:
+At the completion of the Vercel runtime-preparation milestone:
+
+- Node.js is pinned to `22.x` and pnpm is pinned to `10.34.9` for predictable Vercel builds.
+- A pnpm frozen-lockfile installation passed after regenerating the lockfile with pnpm 10.
+- Linting, type checking, all 125 tests across 28 files, and the optimized Next.js production build passed.
+- `.env.local` remains ignored and untracked; no deployment secret was added to the repository.
 
 - The finalized primary, monochrome, reversed, horizontal, and favicon SVG assets passed XML validation, and the repository passed type checking after the asset replacement.
 - The organizer invitation and membership-management implementation passed linting, type checking, and the complete 125-test suite across 28 files.
@@ -336,7 +367,7 @@ Run the repository scripts again after future implementation changes; this secti
 
 The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, and organizer membership management. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain wedding events, guest invitations and RSVP, planning modules, media storage, or Media Hub access.
 
-The recommended next milestone is a Vercel preview deployment and production-readiness verification before beginning the first collaborative planning vertical slice.
+The recommended next milestone is to prepare the `vivaahly_prod` logical database and Vercel-safe Atlas access, then configure the Vercel project and complete preview runtime verification before connecting `vivaahly.bond`.
 
 ## Maintenance Rules
 
