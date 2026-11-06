@@ -24,7 +24,7 @@ export function Brand({ href = "/", inverse = false, className = "" }: BrandProp
       />
       <span
         className={`font-headline-lg text-[24px] font-semibold leading-none tracking-tight sm:text-[27px] ${
-          inverse ? "text-inverse-on-surface" : "text-on-surface"
+          inverse ? "text-inverse-on-surface" : "text-primary"
         }`}
       >
         Vivaahly

@@ -4,6 +4,10 @@ import type { OrganizerInvitationMailer } from "@/modules/organizers/organizer.r
 import { getEmailEnvironment } from "@/server/config/env.server";
 import { ApplicationError, externalServiceError } from "@/server/http/errors";
 import { logger } from "@/server/observability/logger";
+import {
+  ORGANIZER_INVITATION_LOGO_CONTENT_ID,
+  VIVAAHLY_MARK_PNG_BASE64,
+} from "@/server/providers/resend/organizer-invitation-email-assets";
 import { renderOrganizerInvitationEmail } from "@/server/providers/resend/organizer-invitation-email";
 
 export class ResendOrganizerInvitationMailer implements OrganizerInvitationMailer {
@@ -25,6 +29,14 @@ export class ResendOrganizerInvitationMailer implements OrganizerInvitationMaile
           subject: email.subject,
           text: email.text,
           html: email.html,
+          attachments: [
+            {
+              filename: "vivaahly-mark.png",
+              content: VIVAAHLY_MARK_PNG_BASE64,
+              content_type: "image/png",
+              content_id: ORGANIZER_INVITATION_LOGO_CONTENT_ID,
+            },
+          ],
         }),
       });
 

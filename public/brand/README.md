@@ -5,6 +5,7 @@ The master mark is traced from the approved Vivaahly reference artwork. It uses 
 | File | Use |
 | --- | --- |
 | `vivaahly-mark.svg` | Default standalone mark used by the application header |
+| `vivaahly-mark.png` | Email-safe raster version of the default mark |
 | `vivaahly-mark-monochrome.svg` | Single-colour printing and constrained surfaces |
 | `vivaahly-mark-reversed.svg` | Standalone mark on burgundy or other dark backgrounds |
 | `vivaahly-logo.svg` | Primary horizontal lockup |

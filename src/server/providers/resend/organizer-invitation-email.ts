@@ -1,4 +1,5 @@
 import type { WeddingMemberRole } from "@/modules/wedding/wedding.types";
+import { ORGANIZER_INVITATION_LOGO_CONTENT_ID } from "@/server/providers/resend/organizer-invitation-email-assets";
 
 export type OrganizerInvitationEmailInput = {
   recipientEmail: string;
@@ -58,7 +59,14 @@ export function renderOrganizerInvitationEmail(input: OrganizerInvitationEmailIn
               <td style="padding:24px 32px;border-bottom:1px solid #eee6e4;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
-                    <td style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;line-height:1;color:#54142f;">Vivaahly</td>
+                    <td>
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td width="46" style="width:46px;padding-right:10px;"><img src="cid:${ORGANIZER_INVITATION_LOGO_CONTENT_ID}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border:0;"></td>
+                          <td style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;line-height:1;color:#54142f;">Vivaahly</td>
+                        </tr>
+                      </table>
+                    </td>
                     <td align="right"><span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#f4ecea;color:#524347;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Organizer invitation</span></td>
                   </tr>
                 </table>

@@ -2,7 +2,8 @@ import type { SVGProps } from "react";
 
 // Small, local line icons keep the static illustrations independent of an icon font.
 const paths: Record<string, string> = {
-  celebration: "m3 21 5-14 9 9-14 5Zm5-14 9 9M14 3v3m4-1 2-2m-1 7h3M11 8l2-2",
+  celebration:
+    "M12 2.5 13.8 7 18.5 9 13.8 11 12 15.5 10.2 11 5.5 9 10.2 7 12 2.5Zm7 11.5.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14ZM5 14l1 2.5L8.5 18 6 19.5 5 22l-1-2.5L1.5 18 4 16.5 5 14Z",
   groups:
     "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m8-7a4 4 0 0 1 0 7",
   event:

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { VIVAAHLY_MARK_PNG_BASE64 } from "@/server/providers/resend/organizer-invitation-email-assets";
 import { renderOrganizerInvitationEmail } from "@/server/providers/resend/organizer-invitation-email";
 
 describe("renderOrganizerInvitationEmail", () => {
@@ -20,6 +21,7 @@ describe("renderOrganizerInvitationEmail", () => {
     expect(email.html).toContain("Manager");
     expect(email.html).toContain("7 November 2026");
     expect(email.html).toContain("https://vivaahly.bond/join/secure-token");
+    expect(email.html).toContain('src="cid:vivaahly-mark"');
   });
 
   it("escapes invitation content before placing it in HTML", () => {
@@ -37,5 +39,13 @@ describe("renderOrganizerInvitationEmail", () => {
     expect(email.html).toContain("Our &lt;Forever&gt;");
     expect(email.html).not.toContain("<Admin>");
     expect(email.html).toContain("https://example.com/join?a=1&amp;b=2");
+  });
+
+  it("embeds a valid PNG logo through a content ID", () => {
+    const signature = Buffer.from(VIVAAHLY_MARK_PNG_BASE64, "base64").subarray(0, 8);
+
+    expect(signature).toEqual(
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    );
   });
 });

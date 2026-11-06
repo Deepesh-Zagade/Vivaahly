@@ -13,6 +13,7 @@ import {
   createWeddingSchema,
   type CreateWeddingInput,
 } from "@/modules/wedding/wedding.schemas";
+import { coupleDisplayName } from "@/modules/wedding/wedding.presentation";
 import type {
   WeddingDto,
   WeddingMembershipDto,
@@ -413,6 +414,10 @@ function WeddingCreated({
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(`${wedding.mainWeddingDate}T00:00:00.000Z`));
+  const coupleName = coupleDisplayName(
+    wedding.couple.groom.name.en,
+    wedding.couple.bride.name.en,
+  );
 
   return (
     <section className="mx-auto max-w-4xl text-center" aria-labelledby="wedding-created-heading">
@@ -420,7 +425,7 @@ function WeddingCreated({
         <span className="text-secondary">✦</span> Wedding workspace ready
       </p>
       <h1 ref={headingRef} id="wedding-created-heading" tabIndex={-1} className="mt-5 font-headline-lg text-[2.55rem] leading-tight tracking-tight text-primary outline-none sm:text-[3.35rem]">
-        Congratulations, {wedding.title.en}
+        Congratulations, {coupleName}
       </h1>
       <p className="mx-auto mt-3 max-w-2xl text-body-lg leading-8 text-on-surface-variant">
         Your shared planning space is ready. You can now start adding events, organizers, and wedding details.
@@ -430,7 +435,7 @@ function WeddingCreated({
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-secondary to-[#c5a46d]" />
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-fixed text-primary"><WeddingRingsIcon /></div>
         <p className="mt-5 text-label-sm font-semibold uppercase tracking-[0.14em] text-secondary">The wedding of</p>
-        <h2 className="mt-2 font-headline-lg text-[2.4rem] leading-tight text-primary sm:text-[3rem]">{wedding.title.en}</h2>
+        <h2 className="mt-2 font-headline-lg text-[2.4rem] leading-tight text-primary sm:text-[3rem]">{coupleName}</h2>
         {wedding.title.mr ? <p lang="mr" className="mt-2 text-body-md text-on-surface-variant">{wedding.title.mr} · Together with their families</p> : <p className="mt-2 text-body-md text-on-surface-variant">Together with their families</p>}
 
         <dl className="mt-9 grid gap-6 border-t border-outline-variant/70 pt-8 text-center sm:grid-cols-3">

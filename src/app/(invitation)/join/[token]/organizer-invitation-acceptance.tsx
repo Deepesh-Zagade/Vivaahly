@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
+import { Brand } from "@/components/brand";
 import { UiIcon, type UiIconName } from "@/components/ui-icon";
 import { acceptOrganizerInvitationSchema } from "@/modules/organizers/organizer.schemas";
 import type { OrganizerInvitationAccessDto } from "@/modules/organizers/organizer.types";
@@ -122,7 +123,7 @@ export function OrganizerInvitationAcceptance({ token, initialAccess }: { token:
     <div className="flex min-h-screen flex-col bg-surface font-body-md text-on-surface antialiased">
       <header className="border-b border-outline-variant/60 bg-surface/95 px-margin-mobile py-4 backdrop-blur md:px-margin">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <Link href="/" aria-label="Vivaahly home" className="font-headline-lg text-[1.65rem] font-semibold leading-none text-primary no-underline">Vivaahly</Link>
+          <Brand />
           <span className="rounded-full bg-surface-container-high px-3 py-1 text-label-sm font-semibold uppercase tracking-[0.12em] text-on-surface-variant">Organizer invitation</span>
         </div>
       </header>
