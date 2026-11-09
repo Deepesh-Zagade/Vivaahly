@@ -74,23 +74,6 @@ export function OrganizerManagement({ currentUserId, canManage, members, invitat
   }, [confirmMemberAction]);
 
   useEffect(() => {
-    function reconcileOnFocus() {
-      refreshAuthoritativeState();
-    }
-
-    function reconcileOnVisibilityChange() {
-      if (document.visibilityState === "visible") refreshAuthoritativeState();
-    }
-
-    window.addEventListener("focus", reconcileOnFocus);
-    document.addEventListener("visibilitychange", reconcileOnVisibilityChange);
-    return () => {
-      window.removeEventListener("focus", reconcileOnFocus);
-      document.removeEventListener("visibilitychange", reconcileOnVisibilityChange);
-    };
-  }, [refreshAuthoritativeState]);
-
-  useEffect(() => {
     if (!openMemberMenuId) return;
 
     function closeMenuOnOutsideClick(event: PointerEvent) {

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { UiIcon } from "@/components/ui-icon";
 import {
   fetchWithTimeout,
   RequestTimeoutError,
@@ -11,7 +12,7 @@ type LogoutErrorResponse = {
   error?: { message?: string };
 };
 
-export function LogoutButton() {
+export function LogoutButton({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,8 +51,10 @@ export function LogoutButton() {
         type="button"
         onClick={logout}
         disabled={pending}
-        className="min-h-11 whitespace-nowrap rounded-xl px-2.5 py-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary disabled:cursor-wait disabled:opacity-70 sm:px-3"
+        aria-label="Sign out"
+        className={`${compact ? "min-h-9 px-2 text-xs" : "min-h-11 px-2.5 text-label-md sm:px-3"} inline-flex items-center gap-1 whitespace-nowrap rounded-xl py-2 font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary disabled:cursor-wait disabled:opacity-70`}
       >
+        {compact ? <UiIcon name="log-out" className="h-3.5 w-3.5" /> : null}
         {pending ? "Signing out..." : "Sign out"}
       </button>
       {error ? (

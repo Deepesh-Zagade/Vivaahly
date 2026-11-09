@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
-**Last updated:** 2026-11-04
-**Current phase:** Production and dev-branch QA deployments complete; next feature planning ready
+**Last updated:** 2026-11-09
+**Current phase:** Organizer workspace foundation complete; next feature planning ready
 **Active branch:** `dev`
 
 ## Purpose
@@ -24,7 +24,7 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | Wedding details settings | Complete | Admins and Managers can update the essential onboarding details at `/app/settings` until the wedding's local date has passed. |
 | Organizer invitations | Complete | Admins can invite, resend, and revoke organizer invitations; invited family members can securely join through the responsive acceptance flow. |
 | Organizer membership management | Complete | Admins can promote, demote, and remove other organizers with final-Admin, self-management, tenant, and reactivation safeguards; automated verification and manual QA have passed. |
-| Organizer application | In progress | `/app` resolves and displays the authoritative wedding context; planning features such as events, guests, and tasks remain unimplemented. |
+| Organizer application | Foundation complete | `/app` now provides the responsive organizer workspace shell and dashboard, backed by authoritative wedding and organizer context while clearly separating local preview data from unimplemented planning modules. |
 | Guest invitation experience | Not started | Invitation entry and invitation-scoped guest functionality have not been implemented. |
 | Media Hub | Not started | Media access and Media Hub functionality have not been implemented. |
 | Database and external providers | In progress | MongoDB native-driver infrastructure and explicit authentication, wedding, membership, and organizer-invitation indexes are implemented. Resend organizer-invitation delivery is implemented; Cloudflare R2 remains deferred. |
@@ -410,6 +410,35 @@ Operational boundary:
 - Disabling Vercel Authentication makes generated Preview URLs for this project publicly reachable. Do not place Production credentials in Preview, and continue relying on Vivaahly's server-side authentication and authorization for protected application data.
 - Run user-flow QA at `qa.vivaahly.bond`; do not use `vivaahly.vercel.app` for QA because it is intentionally a Production alias.
 
+### 17. Organizer workspace shell and dashboard
+
+**Status:** Complete
+
+Delivered:
+
+- Replaced the temporary wedding summary at `/app` with the approved Stitch-aligned organizer dashboard and shared application shell.
+- Added responsive navigation behavior: a mobile drawer below 768px, an icon rail with overlay expansion for tablet widths, and a collapsible full sidebar on desktop.
+- Corrected the desktop shell so main content and sidebar navigation scroll independently, while the brand and organizer identity remain fixed; the collapse control now sits compactly on the sidebar edge without consuming navigation space.
+- Corrected the tablet control to derive its expand/collapse label and icon from the effective responsive sidebar state.
+- Reduced the wedding header and dashboard-above-the-fold spacing, added a compact family-workspace context indicator, and corrected sticky-header stacking over organizer action controls.
+- Preserved the finalized shared Vivaahly logo rather than copying Stitch's temporary mark.
+- Added the authoritative wedding header with couple names, optional custom wedding title, wedding date, location, and a countdown calculated in the wedding's configured timezone.
+- Added workspace-wide reconciliation so saved wedding details and organizer-role changes refresh the persistent App Router layout after local mutations and when another tab or session becomes active.
+- Connected the Active Organizers panel to real wedding membership data and retained working links for organizer management and wedding settings.
+- Added the approved dashboard composition for quick actions, next ceremony, summary cards, priorities, ceremony timeline, RSVP response bars, guest-experience setup, organizers, and recent activity.
+- Kept unfinished V1 navigation and actions non-interactive and visibly marked as coming soon rather than exposing misleading dead links.
+- Limited illustrative ceremony, guest, task, expense, and activity figures to a clearly labelled local-development preview. Production and QA render honest empty states unless `DASHBOARD_DEMO_DATA=true` is deliberately configured.
+- Kept wedding onboarding on its existing focused layout; the full workspace shell begins only after an active Wedding membership exists.
+
+Verification:
+
+- Type checking passed.
+- Linting passed.
+- The full automated suite passed with 137 tests across 31 files.
+- The local `/app` route compiled successfully and returned its expected authenticated-route redirect for a signed-out request.
+- Focused live browser inspection confirmed the compact above-the-fold dashboard, independent main-content scrolling, fixed sidebar brand/profile regions, correct tablet expand/collapse behavior, authoritative header refresh, and organizer settings controls remaining below the sticky wedding header.
+- Manual responsive review and the follow-up desktop, tablet, scrolling, spacing, header, and stale-data corrections were completed locally.
+
 ## Current Verification State
 
 At the completion of the initial Vercel production-deployment milestone:
@@ -455,7 +484,7 @@ Run the repository scripts again after future implementation changes; this secti
 
 ## Current Implementation Boundary
 
-The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, and organizer membership management. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain wedding events, guest invitations and RSVP, planning modules, media storage, or Media Hub access.
+The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, organizer membership management, and the responsive organizer workspace/dashboard foundation. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain wedding events, guest invitations and RSVP, planning modules, media storage, or Media Hub access.
 
 Production and QA deployment boundaries are now operational. The recommended next step is to run future feature and regression testing through `qa.vivaahly.bond`, promote only reviewed `dev` changes to `main`, and resume planning the next vertical product increment.
 

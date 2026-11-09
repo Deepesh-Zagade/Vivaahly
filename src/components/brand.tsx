@@ -5,9 +5,15 @@ type BrandProps = {
   href?: string;
   inverse?: boolean;
   className?: string;
+  showWordmark?: boolean;
 };
 
-export function Brand({ href = "/", inverse = false, className = "" }: BrandProps) {
+export function Brand({
+  href = "/",
+  inverse = false,
+  className = "",
+  showWordmark = true,
+}: BrandProps) {
   return (
     <Link
       href={href}
@@ -22,13 +28,15 @@ export function Brand({ href = "/", inverse = false, className = "" }: BrandProp
         className={inverse ? "brightness-0 invert" : ""}
         priority
       />
-      <span
-        className={`font-headline-lg text-[24px] font-semibold leading-none tracking-tight sm:text-[27px] ${
-          inverse ? "text-inverse-on-surface" : "text-primary"
-        }`}
-      >
-        Vivaahly
-      </span>
+      {showWordmark ? (
+        <span
+          className={`font-headline-lg text-[24px] font-semibold leading-none tracking-tight sm:text-[27px] ${
+            inverse ? "text-inverse-on-surface" : "text-primary"
+          }`}
+        >
+          Vivaahly
+        </span>
+      ) : null}
     </Link>
   );
 }

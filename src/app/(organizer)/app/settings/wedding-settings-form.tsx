@@ -19,6 +19,7 @@ import {
   fetchWithTimeout,
   RequestTimeoutError,
 } from "@/shared/http/fetch-with-timeout";
+import { replaceAndRefreshWorkspace } from "@/app/(organizer)/app/_components/workspace-reconciliation";
 
 type UpdateWeddingResponse = {
   data?: { wedding: WeddingDto };
@@ -145,7 +146,10 @@ export function WeddingSettingsForm({
       }
 
       if (body.data?.wedding) {
-        router.replace("/app?notice=wedding-details-updated");
+        replaceAndRefreshWorkspace(
+          router,
+          "/app?notice=wedding-details-updated",
+        );
         return;
       }
 

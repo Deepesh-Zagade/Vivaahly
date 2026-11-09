@@ -50,6 +50,31 @@ button:not(:disabled) {
   outline-offset: 3px;
 }
 
+.workspace-page {
+  --color-primary: #702b45;
+  --color-primary-container: #702b45;
+  --color-on-surface: #1c1918;
+  --color-outline-variant: #e0d8d6;
+}
+
+.workspace-page .grid > *,
+.workspace-page .flex > * {
+  min-width: 0;
+}
+
+.workspace-nav-scroll {
+  scrollbar-color: #cdb9be transparent;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 768px) {
+  html:has(.workspace-page),
+  body:has(.workspace-page) {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
 .auth-ambient::before,
 .auth-ambient::after {
   position: absolute;

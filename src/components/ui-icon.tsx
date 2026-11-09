@@ -34,7 +34,18 @@ export type UiIconName =
   | "user-check"
   | "warning"
   | "workspace-off"
-  | "link-off";
+  | "link-off"
+  | "menu"
+  | "plus"
+  | "sparkles"
+  | "clipboard-check"
+  | "wallet"
+  | "store"
+  | "image"
+  | "globe"
+  | "video"
+  | "edit"
+  | "receipt";
 
 const common = {
   fill: "none",
@@ -46,6 +57,28 @@ const common = {
 
 function paths(name: UiIconName): ReactNode {
   switch (name) {
+    case "menu":
+      return <><path d="M4 6h16M4 12h16M4 18h16" /></>;
+    case "plus":
+      return <><path d="M12 4v16M4 12h16" /></>;
+    case "sparkles":
+      return <><path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z" /><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15ZM5 13l.8 2.2L8 16l-2.2.8L5 19l-.8-2.2L2 16l2.2-.8L5 13Z" /></>;
+    case "clipboard-check":
+      return <><rect x="5" y="4" width="14" height="18" rx="2" /><path d="M9 4V2h6v2M9 13l2 2 4-4" /></>;
+    case "wallet":
+      return <><path d="M4 6h13a2 2 0 0 1 2 2v2" /><rect x="3" y="6" width="18" height="14" rx="2" /><path d="M16 11h5v5h-5a2.5 2.5 0 0 1 0-5Z" /></>;
+    case "store":
+      return <><path d="M3 9h18l-2-5H5L3 9Z" /><path d="M5 9v11h14V9M9 20v-6h6v6" /><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /></>;
+    case "image":
+      return <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m3 17 5-5 4 4 2-2 7 6" /></>;
+    case "globe":
+      return <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14 0 18M12 3c-3 3.5-3 14 0 18" /></>;
+    case "video":
+      return <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3v-4Z" /></>;
+    case "edit":
+      return <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4L16.5 3.5Z" /></>;
+    case "receipt":
+      return <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" /><path d="M9 8h6M9 12h6M9 16h4" /></>;
     case "arrow-left":
       return <><path d="m15 18-6-6 6-6" /><path d="M9 12h11" /></>;
     case "arrow-right":

@@ -20,6 +20,7 @@ import {
   notFoundError,
   validationError,
 } from "@/server/http/errors";
+import { calendarDateInTimezone } from "@/shared/dates/calendar-date";
 
 type WeddingServiceDependencies = {
   repository: WeddingRepository;
@@ -46,17 +47,6 @@ export function generateWeddingSlug(input: CreateWeddingInput) {
   const bride = slugPart(input.couple.bride.name.en);
   const names = [groom, bride].filter(Boolean).join("-and-") || "wedding";
   return `${names}-${dateStamp(input.mainWeddingDate)}`;
-}
-
-export function calendarDateInTimezone(now: Date, timezone: string) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
 }
 
 function weddingDateValue(date: Date) {

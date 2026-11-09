@@ -4,21 +4,28 @@ import { renderToStaticMarkup } from "react-dom/server";
 const mocks = vi.hoisted(() => ({
   redirect: vi.fn(),
   requireCurrentOrganizer: vi.fn(),
-  getWeddingService: vi.fn(),
+  getWorkspaceWedding: vi.fn(),
+  getOrganizerService: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("@/modules/auth/auth.server", () => ({
   requireCurrentOrganizer: mocks.requireCurrentOrganizer,
 }));
-vi.mock("@/modules/wedding/wedding.server", () => ({
-  getWeddingService: mocks.getWeddingService,
+vi.mock("@/app/(organizer)/app/_components/workspace-data.server", () => ({
+  getWorkspaceWedding: mocks.getWorkspaceWedding,
+}));
+vi.mock("@/modules/organizers/organizer.server", () => ({
+  getOrganizerService: mocks.getOrganizerService,
 }));
 
 import OrganizerWorkspacePage from "@/app/(organizer)/app/page";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getOrganizerService.mockResolvedValue({
+    getOrganizerManagement: vi.fn().mockResolvedValue({ members: [] }),
+  });
   mocks.redirect.mockImplementation((destination: string) => {
     throw new Error(`redirect:${destination}`);
   });
@@ -34,7 +41,7 @@ describe("organizer workspace routing", () => {
     await expect(
       OrganizerWorkspacePage({ searchParams: Promise.resolve({}) }),
     ).rejects.toThrow("redirect:/app/onboarding");
-    expect(mocks.getWeddingService).not.toHaveBeenCalled();
+    expect(mocks.getWorkspaceWedding).not.toHaveBeenCalled();
   });
 
   it("loads the authoritative wedding for an organizer with membership", async () => {
@@ -43,32 +50,24 @@ describe("organizer workspace routing", () => {
       weddingId: "wedding-1",
       role: "ADMIN",
     };
-    const getWeddingForOrganizer = vi.fn().mockResolvedValue({
-      couple: {
-        bride: { name: { en: "Priya" } },
-        groom: { name: { en: "Deepesh" } },
-      },
-      title: { en: "Deepesh & Priya" },
-      mainWeddingDate: new Date("2027-02-14T00:00:00.000Z"),
-      primaryVenue: { city: { en: "Pune, Maharashtra" } },
-      timezone: "Asia/Kolkata",
-    });
+    const wedding = { counters: { eventCount: 0 } };
     mocks.requireCurrentOrganizer.mockResolvedValue({
       user: { id: "user-1", name: "Deepesh" },
       membership,
     });
-    mocks.getWeddingService.mockResolvedValue({ getWeddingForOrganizer });
+    mocks.getWorkspaceWedding.mockResolvedValue(wedding);
 
     const markup = renderToStaticMarkup(
       await OrganizerWorkspacePage({ searchParams: Promise.resolve({}) }),
     );
 
-    expect(markup.match(/Deepesh &amp; Priya/g)).toHaveLength(1);
-    expect(getWeddingForOrganizer).toHaveBeenCalledWith(membership);
+    expect(markup).toContain("Welcome back, Deepesh");
+    expect(markup).toContain("0 Guests");
+    expect(mocks.getWorkspaceWedding).toHaveBeenCalledWith(membership);
     expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
-  it("keeps couple names as the primary heading and renders a custom title once", async () => {
+  it("renders authoritative active organizers rather than sample people", async () => {
     const membership = {
       id: "membership-1",
       weddingId: "wedding-1",
@@ -78,16 +77,10 @@ describe("organizer workspace routing", () => {
       user: { id: "user-1", name: "Deepesh" },
       membership,
     });
-    mocks.getWeddingService.mockResolvedValue({
-      getWeddingForOrganizer: vi.fn().mockResolvedValue({
-        couple: {
-          bride: { name: { en: "Priya" } },
-          groom: { name: { en: "Deepesh" } },
-        },
-        title: { en: "Our Forever Begins" },
-        mainWeddingDate: new Date("2027-02-14T00:00:00.000Z"),
-        primaryVenue: { city: { en: "Pune, Maharashtra" } },
-        timezone: "Asia/Kolkata",
+    mocks.getWorkspaceWedding.mockResolvedValue({ counters: { eventCount: 0 } });
+    mocks.getOrganizerService.mockResolvedValue({
+      getOrganizerManagement: vi.fn().mockResolvedValue({
+        members: [{ id: "member-1", name: "Priya", role: "MANAGER" }],
       }),
     });
 
@@ -95,11 +88,8 @@ describe("organizer workspace routing", () => {
       await OrganizerWorkspacePage({ searchParams: Promise.resolve({}) }),
     );
 
-    expect(markup).toContain("Our Forever Begins");
-    expect(markup).toContain("Deepesh &amp; Priya");
-    expect(markup.indexOf("Our Forever Begins")).toBeLessThan(
-      markup.indexOf("Deepesh &amp; Priya"),
-    );
+    expect(markup).toContain("Priya");
+    expect(markup).toContain("1 active member");
   });
 
   it("confirms a successful wedding-details redirect", async () => {
@@ -112,18 +102,7 @@ describe("organizer workspace routing", () => {
       user: { id: "user-1", name: "Deepesh" },
       membership,
     });
-    mocks.getWeddingService.mockResolvedValue({
-      getWeddingForOrganizer: vi.fn().mockResolvedValue({
-        couple: {
-          bride: { name: { en: "Priya" } },
-          groom: { name: { en: "Deepesh" } },
-        },
-        title: { en: "Our Forever Begins" },
-        mainWeddingDate: new Date("2027-02-14T00:00:00.000Z"),
-        primaryVenue: { city: { en: "Pune, Maharashtra" } },
-        timezone: "Asia/Kolkata",
-      }),
-    });
+    mocks.getWorkspaceWedding.mockResolvedValue({ counters: { eventCount: 0 } });
 
     const markup = renderToStaticMarkup(
       await OrganizerWorkspacePage({
