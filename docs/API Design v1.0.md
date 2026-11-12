@@ -1155,7 +1155,7 @@ Example:
 
 Domain validation includes:
 
-- `endAt >= startAt`
+- `endAt > startAt`
 - same-wedding references
 - event count <= 10
 - deleted event cannot be updated through normal endpoint

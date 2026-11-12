@@ -35,7 +35,7 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
     label: "Planning",
     items: [
       { label: "Dashboard", icon: "dashboard", href: "/app" },
-      { label: "Events", icon: "sparkles" },
+      { label: "Events", icon: "sparkles", href: "/app/events" },
       { label: "Guests", icon: "users" },
       { label: "Invitations & RSVP", icon: "mail" },
       { label: "Tasks", icon: "clipboard-check" },

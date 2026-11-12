@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
-**Last updated:** 2026-11-09
-**Current phase:** Organizer workspace foundation complete; next feature planning ready
+**Last updated:** 2026-11-12
+**Current phase:** Event Management vertical complete and ready for QA deployment
 **Active branch:** `dev`
 
 ## Purpose
@@ -25,9 +25,10 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | Organizer invitations | Complete | Admins can invite, resend, and revoke organizer invitations; invited family members can securely join through the responsive acceptance flow. |
 | Organizer membership management | Complete | Admins can promote, demote, and remove other organizers with final-Admin, self-management, tenant, and reactivation safeguards; automated verification and manual QA have passed. |
 | Organizer application | Foundation complete | `/app` now provides the responsive organizer workspace shell and dashboard, backed by authoritative wedding and organizer context while clearly separating local preview data from unimplemented planning modules. |
+| Event management | Complete | Active organizers can create, view, edit, and remove up to ten wedding events through the responsive organizer workspace, with authoritative tenant isolation and wedding-timezone date handling. |
 | Guest invitation experience | Not started | Invitation entry and invitation-scoped guest functionality have not been implemented. |
 | Media Hub | Not started | Media access and Media Hub functionality have not been implemented. |
-| Database and external providers | In progress | MongoDB native-driver infrastructure and explicit authentication, wedding, membership, and organizer-invitation indexes are implemented. Resend organizer-invitation delivery is implemented; Cloudflare R2 remains deferred. |
+| Database and external providers | In progress | MongoDB native-driver infrastructure and explicit authentication, wedding, membership, organizer-invitation, and event indexes are implemented. Resend organizer-invitation delivery is implemented; Cloudflare R2 remains deferred. |
 
 ## Completed Milestones
 
@@ -439,6 +440,36 @@ Verification:
 - Focused live browser inspection confirmed the compact above-the-fold dashboard, independent main-content scrolling, fixed sidebar brand/profile regions, correct tablet expand/collapse behavior, authoritative header refresh, and organizer settings controls remaining below the sticky wedding header.
 - Manual responsive review and the follow-up desktop, tablet, scrolling, spacing, header, and stale-data corrections were completed locally.
 
+### 18. Wedding Event Management
+
+**Status:** Complete
+
+Delivered:
+
+- Added responsive organizer routes for the chronological event list, event creation, event details, event editing, and confirmed deletion under `/app/events`.
+- Added authenticated `GET` and `POST /api/v1/events` plus `GET`, `PATCH`, and `DELETE /api/v1/events/[eventId]` Route Handlers, deriving the authoritative Wedding tenant from the active organizer membership rather than accepting a browser-supplied `weddingId`.
+- Added an Events domain module with Zod input schemas, service rules, DTO mapping, MongoDB native-driver repository ownership, and explicit event indexes.
+- Enforced the V1 maximum of ten active events atomically through the Wedding event counter, including conflict handling for concurrent creation attempts.
+- Enforced a genuinely later end time while supporting overnight and multi-day events, and documented the strengthened `endAt > startAt` contract.
+- Prevented creation of past-dated events using the Wedding's configured timezone while allowing events on the current local day. Existing historical events remain editable and are not silently removed.
+- Added bilingual event titles and optional bilingual descriptions, venue details, secure map links, dress-code guidance, and private organizer notes with field-level validation.
+- Added chronological wedding-local grouping, next-ceremony presentation, empty and not-found states, transient success feedback, and soft deletion with transactional counter maintenance.
+- Rebuilt the event list and details experiences against the approved Stitch hierarchy, including compact date tiles, responsive metadata and actions, and distinct Vivaahly palette accents across ceremony days.
+- Connected the workspace Events navigation, dashboard quick action, next-ceremony card, and active-event summary to authoritative Event data while retaining honest empty states.
+
+Verification:
+
+- Type checking passed.
+- Linting passed.
+- The complete automated suite passed with 150 tests across 34 files.
+- Focused browser verification passed for the responsive event list and its authoritative persisted data.
+- Code review and comprehensive manual QA completed without actionable findings after the past-date and Stitch-alignment corrections.
+
+Intentional limitations:
+
+- Event images remain deferred to a follow-up Event increment.
+- Task, RSVP, vendor, and expense coordination summaries will be added to Event details as those owning verticals are implemented.
+
 ## Current Verification State
 
 At the completion of the initial Vercel production-deployment milestone:
@@ -459,6 +490,7 @@ At the completion of the initial Vercel production-deployment milestone:
 
 - The finalized primary, monochrome, reversed, horizontal, and favicon SVG assets passed XML validation, and the repository passed type checking after the asset replacement.
 - The organizer invitation and membership-management implementation passed linting, type checking, and the complete 125-test suite across 28 files.
+- The Event Management implementation passed linting, type checking, and the complete 150-test suite across 34 files; code review and manual QA reported no remaining defects.
 - The repeatable Atlas index command created the organizer invitation token, wedding/email/status, pending-email uniqueness, and expiration indexes successfully.
 - Live Resend email delivery and end-to-end browser QA passed for the organizer invitation lifecycle, including accepted, revoked, wrong-account, and unavailable-link states.
 - Linting passed.
@@ -484,7 +516,7 @@ Run the repository scripts again after future implementation changes; this secti
 
 ## Current Implementation Boundary
 
-The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, organizer membership management, and the responsive organizer workspace/dashboard foundation. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain wedding events, guest invitations and RSVP, planning modules, media storage, or Media Hub access.
+The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, organizer membership management, the responsive organizer workspace/dashboard foundation, and Wedding Event Management. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain guest invitations and RSVP, tasks, vendors, expenses, media storage, or Media Hub access.
 
 Production and QA deployment boundaries are now operational. The recommended next step is to run future feature and regression testing through `qa.vivaahly.bond`, promote only reviewed `dev` changes to `main`, and resume planning the next vertical product increment.
 

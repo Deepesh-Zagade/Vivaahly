@@ -4,6 +4,11 @@ import { DashboardContent } from "@/app/(organizer)/app/_components/dashboard-co
 import { getWorkspaceWedding } from "@/app/(organizer)/app/_components/workspace-data.server";
 import { WorkspaceSuccessNotice } from "@/app/(organizer)/app/workspace-success-notice";
 import { requireCurrentOrganizer } from "@/modules/auth/auth.server";
+import {
+  formatEventDay,
+  formatEventTimeRange,
+} from "@/modules/events/event.presentation";
+import { getEventService } from "@/modules/events/event.server";
 import { getOrganizerService } from "@/modules/organizers/organizer.server";
 
 export const metadata: Metadata = { title: "Organizer workspace" };
@@ -23,9 +28,10 @@ export default async function OrganizerWorkspacePage({
 
   if (!organizer.membership) redirect("/app/onboarding");
 
-  const [wedding, management] = await Promise.all([
+  const [wedding, management, events] = await Promise.all([
     getWorkspaceWedding(organizer.membership),
     (await getOrganizerService()).getOrganizerManagement(organizer),
+    (await getEventService()).listEvents(organizer.membership),
   ]);
   const showDemoData =
     process.env.NODE_ENV === "development" ||
@@ -39,7 +45,21 @@ export default async function OrganizerWorkspacePage({
       <DashboardContent
         organizerName={organizer.user.name}
         showDemoData={showDemoData}
-        eventCount={wedding.counters.eventCount}
+        events={events.map((event) => ({
+          id: event.id,
+          title: event.title.en,
+          dayLabel: formatEventDay(event.startAt, wedding.timezone),
+          timeLabel: formatEventTimeRange(
+            event.startAt,
+            event.endAt,
+            wedding.timezone,
+          ),
+          location:
+            event.venue.name.en ??
+            event.venue.address.en ??
+            "Venue not added",
+          upcoming: event.endAt >= new Date(),
+        }))}
         members={management.members.map((member) => ({
           id: member.id,
           name: member.name,

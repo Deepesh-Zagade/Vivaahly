@@ -5,7 +5,14 @@ import type { WeddingMemberRole } from "@/modules/wedding/wedding.types";
 type DashboardContentProps = {
   organizerName: string;
   showDemoData: boolean;
-  eventCount: number;
+  events: Array<{
+    id: string;
+    title: string;
+    dayLabel: string;
+    timeLabel: string;
+    location: string;
+    upcoming: boolean;
+  }>;
   members: Array<{ id: string; name: string; role: WeddingMemberRole }>;
 };
 
@@ -16,21 +23,14 @@ const demoTasks = [
   ["Upload venue map and decorator quotation", "Not Started", "Due December 13", "Sangeet", "Rahul"],
 ] as const;
 
-const demoTimeline = [
-  ["Dec 14 · 11:00 AM – 3:00 PM", "Mehendi by the Lake", "Aravali Lawns · Intimate gathering · 95 expected"],
-  ["Tomorrow · 6:30 PM – 11:30 PM", "Sangeet & Musical Evening", "The Courtyard Pavilion · Musical performances & celebrations · 184 expected"],
-  ["Dec 15 · 10:00 AM – 1:00 PM", "Haldi & Phoolon Ki Holi", "Poolside Courtyard · Yellow ethnic dress code · 120 expected"],
-  ["Dec 15 · 4:30 PM – 8:30 PM", "Vivah & Saat Phere", "Grand Lakeside Mandap · Traditional wedding pheras · 320 expected"],
-  ["Dec 16 · 7:30 PM onwards", "Grand Wedding Reception", "Royal Ballroom & Grand Terrace · Formal banquet · 380 expected"],
-] as const;
-
 const demoResponses = [
   { name: "Sangeet", total: 184, attending: 142, awaiting: 28, declined: 14 },
   { name: "Wedding Ceremony", total: 320, attending: 247, awaiting: 38, declined: 35 },
   { name: "Reception", total: 380, attending: 280, awaiting: 62, declined: 38 },
 ];
 
-export function DashboardContent({ organizerName, showDemoData, eventCount, members }: DashboardContentProps) {
+export function DashboardContent({ organizerName, showDemoData, events, members }: DashboardContentProps) {
+  const nextEvent = events.find((event) => event.upcoming) ?? null;
   return (
     <>
       <section>
@@ -39,23 +39,23 @@ export function DashboardContent({ organizerName, showDemoData, eventCount, memb
       </section>
 
       <section aria-label="Quick actions" className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:gap-3">
-        <FutureAction primary icon="plus" label="Create event" />
+        <QuickLink href="/app/events/new" icon="plus" label="Create event" primary />
         <FutureAction icon="user-plus" label="Add guest" />
         <FutureAction icon="wallet" label="Record expense" />
         <QuickLink href="/app/organizers" icon="users" label="Manage organizers" />
         <QuickLink href="/app/settings" icon="edit" label="Edit wedding details" />
       </section>
 
-      <NextCeremony showDemoData={showDemoData} />
+      <NextCeremony event={nextEvent} />
 
       <section aria-label="Wedding overview" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon="users" label="Guests & RSVP" value={showDemoData ? "320 Guests" : "0 Guests"}>
           <p className="font-semibold text-on-surface">Main wedding ceremony:</p>
           <p>{showDemoData ? "247 attending · 38 awaiting · 35 not attending" : "Guest planning has not started"}</p>
         </StatCard>
-        <StatCard icon="calendar" label="Wedding events" value={`${showDemoData ? 5 : eventCount} Active Events`}>
-          <p><strong className="font-semibold text-on-surface">Next: </strong>{showDemoData ? "Sangeet & Musical Evening" : "No event scheduled"}</p>
-          <div className="flex flex-wrap justify-between gap-1"><span>{showDemoData ? "Tomorrow · 6:30 PM" : "Events coming soon"}</span><span className="font-medium text-primary">{showDemoData ? "5 of 10 events created" : `${eventCount} of 10 events created`}</span></div>
+        <StatCard icon="calendar" label="Wedding events" value={`${events.length} Active ${events.length === 1 ? "Event" : "Events"}`}>
+          <p><strong className="font-semibold text-on-surface">Next: </strong>{nextEvent?.title ?? "No event scheduled"}</p>
+          <div className="flex flex-wrap justify-between gap-1"><span>{nextEvent?.timeLabel ?? "Create an event to begin"}</span><span className="font-medium text-primary">{events.length} of 10 events created</span></div>
         </StatCard>
         <StatCard icon="clipboard-check" label="Family tasks" value={showDemoData ? "12 Open Tasks" : "0 Open Tasks"}>
           <p className="font-semibold text-primary">{showDemoData ? "4 assigned to you" : "No tasks assigned"}</p>
@@ -68,7 +68,7 @@ export function DashboardContent({ organizerName, showDemoData, eventCount, memb
       </section>
 
       <div className="grid grid-cols-1 items-start gap-8 2xl:grid-cols-12">
-        <div className="flex flex-col gap-8 2xl:col-span-7"><Priorities showDemoData={showDemoData} /><Timeline showDemoData={showDemoData} /></div>
+        <div className="flex flex-col gap-8 2xl:col-span-7"><Priorities showDemoData={showDemoData} /><Timeline events={events} /></div>
         <div className="flex flex-col gap-8 2xl:col-span-5"><GuestSnapshot showDemoData={showDemoData} /><GuestExperience /><ActiveOrganizers members={members} /><RecentActivity showDemoData={showDemoData} /></div>
       </div>
     </>
@@ -79,12 +79,12 @@ function FutureAction({ icon, label, primary = false }: { icon: UiIconName; labe
   return <button type="button" disabled title={`${label} is coming soon`} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-center text-xs font-semibold shadow-sm sm:text-sm ${primary ? "bg-primary text-on-primary" : "border border-outline-variant bg-white text-on-surface"}`}><UiIcon name={icon} className="h-4 w-4" />{label}<span className="sr-only"> — coming soon</span></button>;
 }
 
-function QuickLink({ href, icon, label }: { href: string; icon: UiIconName; label: string }) {
-  return <Link href={href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-outline-variant bg-white px-4 py-2.5 text-center text-xs font-medium text-on-surface shadow-sm transition-colors hover:bg-surface-container-low sm:text-sm"><UiIcon name={icon} className="h-4 w-4 text-primary" />{label}</Link>;
+function QuickLink({ href, icon, label, primary = false }: { href: string; icon: UiIconName; label: string; primary?: boolean }) {
+  return <Link href={href} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-center text-xs font-semibold shadow-sm transition-colors sm:text-sm ${primary ? "bg-primary text-on-primary hover:bg-primary-container" : "border border-outline-variant bg-white text-on-surface hover:bg-surface-container-low"}`}><UiIcon name={icon} className={`h-4 w-4 ${primary ? "text-on-primary" : "text-primary"}`} />{label}</Link>;
 }
 
-function NextCeremony({ showDemoData }: { showDemoData: boolean }) {
-  return <section className="relative overflow-hidden rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5"><span className="absolute inset-y-0 left-0 w-1.5 bg-primary" /><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"><div className="flex max-w-3xl flex-col gap-2"><div className="flex flex-wrap items-center gap-2.5"><span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Next ceremony</span><span className="flex items-center gap-1 text-xs font-medium text-on-surface-variant"><UiIcon name="clock" className="h-3.5 w-3.5 text-primary" />{showDemoData ? "Tomorrow · 6:30 PM – 11:30 PM" : "No ceremony scheduled"}</span></div><h3 className="font-headline-lg text-2xl font-semibold tracking-tight text-on-surface">{showDemoData ? "Sangeet & Musical Evening" : "Your first event will appear here"}</h3><p className="flex items-center gap-1 text-xs font-medium text-on-surface-variant sm:text-sm"><UiIcon name="map-pin" className="h-4 w-4 text-primary" />{showDemoData ? "The Courtyard Pavilion, Taj Aravali, Udaipur" : "Create an event to begin the ceremony timeline"}</p><div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-3"><CeremonyMetric icon="users" value={showDemoData ? "184 Expected" : "0 Expected"} detail={showDemoData ? "142 attending" : "No responses"} /><CeremonyMetric icon="clipboard-check" value={showDemoData ? "3 Tasks Due" : "0 Tasks Due"} detail={showDemoData ? "DJ and floral setup" : "No tasks"} /><CeremonyMetric icon="receipt" value={showDemoData ? "4 Vendors" : "0 Vendors"} detail={showDemoData ? "Sound, stage and photography" : "No vendors"} /></div></div><FutureAction icon="arrow-right" label="View event details" primary /></div></section>;
+function NextCeremony({ event }: { event: DashboardContentProps["events"][number] | null }) {
+  return <section className="relative overflow-hidden rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5"><span className="absolute inset-y-0 left-0 w-1.5 bg-primary" /><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"><div className="flex max-w-3xl flex-col gap-2"><div className="flex flex-wrap items-center gap-2.5"><span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Next ceremony</span><span className="flex items-center gap-1 text-xs font-medium text-on-surface-variant"><UiIcon name="clock" className="h-3.5 w-3.5 text-primary" />{event?.timeLabel ?? "No ceremony scheduled"}</span></div><h3 className="font-headline-lg text-2xl font-semibold tracking-tight text-on-surface">{event?.title ?? "Your first event will appear here"}</h3><p className="flex items-center gap-1 text-xs font-medium text-on-surface-variant sm:text-sm"><UiIcon name="map-pin" className="h-4 w-4 text-primary" />{event?.location ?? "Create an event to begin the ceremony timeline"}</p><div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-3"><CeremonyMetric icon="users" value="0 Expected" detail="Guest planning not started" /><CeremonyMetric icon="clipboard-check" value="0 Tasks Due" detail="Task planning not started" /><CeremonyMetric icon="receipt" value="0 Vendors" detail="No vendors linked" /></div></div><Link href={event ? `/app/events/${event.id}` : "/app/events"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container"><UiIcon name="arrow-right" className="h-4 w-4" />{event ? "View event details" : "View wedding events"}</Link></div></section>;
 }
 
 function CeremonyMetric({ icon, value, detail }: { icon: UiIconName; value: string; detail: string }) {
@@ -104,8 +104,9 @@ function Priorities({ showDemoData }: { showDemoData: boolean }) {
   return <Card><CardHeader title="My Priorities" subtitle={`${tasks.length} tasks`} action="View all tasks" /><div className="flex flex-col gap-2.5">{tasks.length ? tasks.map(([title, status, due, event, assignee]) => <div key={title} className="flex items-start gap-3 rounded-xl border border-outline-variant/60 bg-surface-container-low p-3.5"><span className="mt-0.5 h-5 w-5 shrink-0 rounded border border-outline bg-white" aria-hidden="true" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center justify-between gap-1"><strong className="text-xs text-on-surface sm:text-sm">{title}</strong><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${status === "In Progress" ? "bg-tertiary-fixed text-on-tertiary-fixed" : "bg-surface-container-high text-on-surface-variant"}`}>{status}</span></div><div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant"><span className="font-medium text-primary">{due}</span><span>·</span><span className="rounded bg-surface-container-high px-1.5 py-0.5 text-[11px] text-on-surface">{event}</span><span>·</span><span>Assigned: {assignee}</span></div></div></div>) : <EmptyState text="Tasks will appear here when the family task feature is available." />}</div></Card>;
 }
 
-function Timeline({ showDemoData }: { showDemoData: boolean }) {
-  return <Card><CardHeader title="Upcoming Ceremony Timeline" description="Chronological flow of events across your celebration" subtitle={showDemoData ? "5 ceremonies" : "No ceremonies"} /><div className="relative flex flex-col gap-6 pl-6 sm:pl-8"><span className="absolute bottom-3 left-2.5 top-2 w-0.5 bg-outline-variant sm:left-3" />{showDemoData ? demoTimeline.map((item, index) => <div key={item[1]} className="relative"><span className={`absolute -left-6 mt-1.5 h-3 w-3 rounded-full ring-4 ring-white sm:-left-8 ${index === 1 ? "bg-primary" : "bg-secondary"}`} /><div className={index === 1 ? "rounded-xl border border-outline-variant/60 bg-surface-container-low p-3" : ""}><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-secondary">{item[0]}</span>{index === 1 ? <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-white">Next</span> : null}</div><h4 className="text-base font-semibold text-on-surface">{item[1]}</h4><p className="text-xs text-on-surface-variant">{item[2]}</p></div></div>) : <EmptyState text="Your event timeline will appear here." />}</div></Card>;
+function Timeline({ events }: { events: DashboardContentProps["events"] }) {
+  const nextId = events.find((event) => event.upcoming)?.id;
+  return <Card><CardHeader title="Upcoming Ceremony Timeline" description="Chronological flow of events across your celebration" subtitle={events.length ? `${events.length} ${events.length === 1 ? "ceremony" : "ceremonies"}` : "No ceremonies"} /><div className="relative flex flex-col gap-6 pl-6 sm:pl-8"><span className="absolute bottom-3 left-2.5 top-2 w-0.5 bg-outline-variant sm:left-3" />{events.length ? events.map((event) => <div key={event.id} className="relative"><span className={`absolute -left-6 mt-1.5 h-3 w-3 rounded-full ring-4 ring-white sm:-left-8 ${event.id === nextId ? "bg-primary" : "bg-secondary"}`} /><div className={event.id === nextId ? "rounded-xl border border-outline-variant/60 bg-surface-container-low p-3" : ""}><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-secondary">{event.dayLabel} · {event.timeLabel}</span>{event.id === nextId ? <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-white">Next</span> : null}</div><Link href={`/app/events/${event.id}`} className="text-base font-semibold text-on-surface hover:text-primary hover:underline">{event.title}</Link><p className="text-xs text-on-surface-variant">{event.location}</p></div></div>) : <EmptyState text="Your event timeline will appear here." />}</div></Card>;
 }
 
 function GuestSnapshot({ showDemoData }: { showDemoData: boolean }) {

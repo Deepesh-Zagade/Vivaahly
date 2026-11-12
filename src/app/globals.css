@@ -45,7 +45,7 @@ button:not(:disabled) {
   outline-offset: 3px;
 }
 
-.organizer-page :where(a, button, input, select):focus-visible {
+.organizer-page :where(a, button, input, select, textarea):focus-visible {
   outline: 3px solid #a65c76;
   outline-offset: 3px;
 }
