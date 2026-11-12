@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
 **Last updated:** 2026-11-12
-**Current phase:** Event Management complete; workspace loading and resilience improvements ready for QA deployment
+**Current phase:** Event Management and workspace loading/resilience improvements deployed to QA
 **Active branch:** `dev`
 
 ## Purpose
@@ -490,6 +490,7 @@ Verification:
 - Type checking and linting passed.
 - The complete automated suite passed with 152 tests across 35 files.
 - The optimized Next.js production build completed successfully with the supported webpack builder.
+- Feature commit `36b08b0` completed its Vercel Preview deployment successfully, and `qa.vivaahly.bond` was verified to serve that deployment's exact Next.js asset set with healthy public and database-backed responses.
 
 ## Current Verification State
 
