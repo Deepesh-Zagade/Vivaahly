@@ -16,6 +16,18 @@ type DashboardContentProps = {
   members: Array<{ id: string; name: string; role: WeddingMemberRole }>;
 };
 
+type DashboardEvent = DashboardContentProps["events"][number];
+
+const timelineDayPalettes = [
+  { accent: "#702b45" },
+  { accent: "#a64f3b" },
+  { accent: "#806015" },
+  { accent: "#99536c" },
+  { accent: "#4e6b5c" },
+] as const;
+
+const timelinePreviewLimit = 5;
+
 const demoTasks = [
   ["Confirm Sangeet decoration and floral stage setup", "In Progress", "Due today · 4:00 PM", "Sangeet", "Rahul"],
   ["Review photographer quotation and shot list", "Not Started", "Due tomorrow", "Wedding", "Deepesh"],
@@ -106,7 +118,96 @@ function Priorities({ showDemoData }: { showDemoData: boolean }) {
 
 function Timeline({ events }: { events: DashboardContentProps["events"] }) {
   const nextId = events.find((event) => event.upcoming)?.id;
-  return <Card><CardHeader title="Upcoming Ceremony Timeline" description="Chronological flow of events across your celebration" subtitle={events.length ? `${events.length} ${events.length === 1 ? "ceremony" : "ceremonies"}` : "No ceremonies"} /><div className="relative flex flex-col gap-6 pl-6 sm:pl-8"><span className="absolute bottom-3 left-2.5 top-2 w-0.5 bg-outline-variant sm:left-3" />{events.length ? events.map((event) => <div key={event.id} className="relative"><span className={`absolute -left-6 mt-1.5 h-3 w-3 rounded-full ring-4 ring-white sm:-left-8 ${event.id === nextId ? "bg-primary" : "bg-secondary"}`} /><div className={event.id === nextId ? "rounded-xl border border-outline-variant/60 bg-surface-container-low p-3" : ""}><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-secondary">{event.dayLabel} · {event.timeLabel}</span>{event.id === nextId ? <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-white">Next</span> : null}</div><Link href={`/app/events/${event.id}`} className="text-base font-semibold text-on-surface hover:text-primary hover:underline">{event.title}</Link><p className="text-xs text-on-surface-variant">{event.location}</p></div></div>) : <EmptyState text="Your event timeline will appear here." />}</div></Card>;
+  const previewEvents = events.slice(0, timelinePreviewLimit);
+  const dayGroups = groupTimelineEvents(previewEvents);
+
+  return (
+    <Card>
+      <CardHeader
+        title="Upcoming Ceremony Timeline"
+        description="Chronological flow of events across your celebration"
+        subtitle={events.length ? `${events.length} ${events.length === 1 ? "ceremony" : "ceremonies"}` : "No ceremonies"}
+      />
+      {events.length ? (
+        <>
+          <div className="relative flex flex-col gap-5 pl-6 sm:pl-8">
+            <span className="absolute bottom-3 left-2.5 top-5 w-0.5 bg-outline-variant sm:left-3" />
+            {dayGroups.map((group, groupIndex) => {
+              const palette = timelineDayPalettes[groupIndex % timelineDayPalettes.length];
+              return (
+                <section key={group.dayLabel} aria-label={group.dayLabel} className="flex flex-col gap-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: palette.accent }}>
+                      {group.dayLabel}
+                    </h4>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-outline">
+                      {group.events.length} {group.events.length === 1 ? "ceremony" : "ceremonies"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {group.events.map((event) => {
+                      const isNext = event.id === nextId;
+                      return (
+                        <div key={event.id} className="relative">
+                          <span
+                            className="absolute -left-6 mt-1.5 h-3 w-3 rounded-full sm:-left-8"
+                            style={{
+                              backgroundColor: palette.accent,
+                              boxShadow: isNext
+                                ? `0 0 0 4px #fff, 0 0 0 6px ${palette.accent}33`
+                                : "0 0 0 4px #fff",
+                            }}
+                          />
+                          <div className={isNext ? "rounded-xl border border-outline-variant/60 bg-surface-container-low p-3" : "py-0.5"}>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold" style={{ color: palette.accent }}>
+                                {timelineTimeLabel(event.timeLabel)}
+                              </span>
+                              {isNext ? <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-white">Next</span> : null}
+                            </div>
+                            <Link href={`/app/events/${event.id}`} className="text-base font-semibold text-on-surface hover:text-primary hover:underline">
+                              {event.title}
+                            </Link>
+                            <p className="text-xs text-on-surface-variant">{event.location}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+          {events.length > timelinePreviewLimit ? (
+            <div className="border-t border-outline-variant/60 pt-3 text-right">
+              <Link href="/app/events" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                View all {events.length} events
+                <UiIcon name="arrow-right" className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <EmptyState text="Your event timeline will appear here." />
+      )}
+    </Card>
+  );
+}
+
+function groupTimelineEvents(events: DashboardEvent[]) {
+  return events.reduce<Array<{ dayLabel: string; events: DashboardEvent[] }>>((groups, event) => {
+    const currentGroup = groups.at(-1);
+    if (currentGroup?.dayLabel === event.dayLabel) {
+      currentGroup.events.push(event);
+    } else {
+      groups.push({ dayLabel: event.dayLabel, events: [event] });
+    }
+    return groups;
+  }, []);
+}
+
+function timelineTimeLabel(timeLabel: string) {
+  return timeLabel.replace(/\s+(?:[A-Z]{2,5}|GMT[+-]\d{1,2}(?::\d{2})?)$/u, "");
 }
 
 function GuestSnapshot({ showDemoData }: { showDemoData: boolean }) {

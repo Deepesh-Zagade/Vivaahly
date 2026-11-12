@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { UiIcon } from "@/components/ui-icon";
 import {
   fetchWithTimeout,
@@ -20,6 +21,7 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
   async function logout() {
     setPending(true);
     setError(null);
+    let navigationStarted = false;
 
     try {
       const response = await fetchWithTimeout("/api/v1/auth/logout", {
@@ -32,6 +34,7 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
         return;
       }
 
+      navigationStarted = true;
       router.replace("/sign-in");
       router.refresh();
     } catch (requestError) {
@@ -41,7 +44,7 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
           : "Could not sign out. Please try again.",
       );
     } finally {
-      setPending(false);
+      if (!navigationStarted) setPending(false);
     }
   }
 
@@ -51,10 +54,15 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
         type="button"
         onClick={logout}
         disabled={pending}
+        aria-busy={pending}
         aria-label="Sign out"
         className={`${compact ? "min-h-9 px-2 text-xs" : "min-h-11 px-2.5 text-label-md sm:px-3"} inline-flex items-center gap-1 whitespace-nowrap rounded-xl py-2 font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary disabled:cursor-wait disabled:opacity-70`}
       >
-        {compact ? <UiIcon name="log-out" className="h-3.5 w-3.5" /> : null}
+        {pending ? (
+          <LoadingSpinner className="h-3.5 w-3.5" />
+        ) : compact ? (
+          <UiIcon name="log-out" className="h-3.5 w-3.5" />
+        ) : null}
         {pending ? "Signing out..." : "Sign out"}
       </button>
       {error ? (

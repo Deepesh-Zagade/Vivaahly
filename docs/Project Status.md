@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
 **Last updated:** 2026-11-12
-**Current phase:** Event Management vertical complete and ready for QA deployment
+**Current phase:** Event Management complete; workspace loading and resilience improvements ready for QA deployment
 **Active branch:** `dev`
 
 ## Purpose
@@ -26,6 +26,7 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | Organizer membership management | Complete | Admins can promote, demote, and remove other organizers with final-Admin, self-management, tenant, and reactivation safeguards; automated verification and manual QA have passed. |
 | Organizer application | Foundation complete | `/app` now provides the responsive organizer workspace shell and dashboard, backed by authoritative wedding and organizer context while clearly separating local preview data from unimplemented planning modules. |
 | Event management | Complete | Active organizers can create, view, edit, and remove up to ten wedding events through the responsive organizer workspace, with authoritative tenant isolation and wedding-timezone date handling. |
+| Workspace loading and resilience | Complete | Route-level skeletons, action-specific progress feedback, a functional database-recovery retry, and a clearer ceremony timeline now provide consistent responsive feedback throughout organizer workflows. |
 | Guest invitation experience | Not started | Invitation entry and invitation-scoped guest functionality have not been implemented. |
 | Media Hub | Not started | Media access and Media Hub functionality have not been implemented. |
 | Database and external providers | In progress | MongoDB native-driver infrastructure and explicit authentication, wedding, membership, organizer-invitation, and event indexes are implemented. Resend organizer-invitation delivery is implemented; Cloudflare R2 remains deferred. |
@@ -469,6 +470,26 @@ Intentional limitations:
 
 - Event images remain deferred to a follow-up Event increment.
 - Task, RSVP, vendor, and expense coordination summaries will be added to Event details as those owning verticals are implemented.
+
+### 19. Workspace loading, recovery, and timeline polish
+
+**Status:** Complete
+
+Delivered:
+
+- Added responsive route-level loading skeletons for the dashboard, event list, event details, event forms, onboarding, organizer management, and wedding settings while keeping the persistent workspace navigation and wedding header stable.
+- Added a shared accessible loading indicator and explicit progress labels for registration, sign in, sign out, invitation acceptance, opening the workspace, wedding creation and updates, event creation, editing and deletion, invitation delivery and revocation, and organizer role or membership changes.
+- Kept successful mutations visibly pending until their destination begins rendering, disabled duplicate submissions, and restored controls normally when a request fails.
+- Corrected the organizer database-recovery action so **Try again** performs a fresh document request instead of resetting only the already-failed React boundary.
+- Refined the dashboard ceremony timeline with wedding-palette accents shared by events on the same day, a clearer next-event treatment, a neutral connector, concise local time labels, and a five-event dashboard preview linked to the complete event schedule.
+- Preserved reduced-motion and assistive-technology support through `aria-busy`, status announcements, and non-animated fallbacks without introducing artificial delays or blocking full-screen overlays.
+
+Verification:
+
+- Manual browser QA confirmed the loading experience across the implemented organizer flows and reported that the application now feels consistent and professional.
+- Type checking and linting passed.
+- The complete automated suite passed with 152 tests across 35 files.
+- The optimized Next.js production build completed successfully with the supported webpack builder.
 
 ## Current Verification State
 

@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import {
   createWeddingSchema,
   type CreateWeddingInput,
@@ -76,15 +77,6 @@ function ArrowIcon() {
   return (
     <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14m-5-5 5 5-5 5" />
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg aria-hidden="true" className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-      <circle className="opacity-30" cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" />
-      <path className="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v3a6 6 0 0 1 6 6h3Z" />
     </svg>
   );
 }
@@ -300,7 +292,7 @@ export function WeddingOnboardingForm({
       ) : null}
 
       {!conflict ? (
-        <form onSubmit={handleSubmit} noValidate className="rounded-3xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-[0_18px_45px_rgba(44,28,33,0.08)] sm:p-8 md:p-10">
+        <form onSubmit={handleSubmit} noValidate aria-busy={pending} className="rounded-3xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-[0_18px_45px_rgba(44,28,33,0.08)] sm:p-8 md:p-10">
           {formError ? (
             <div className="mb-6 rounded-xl bg-error-container p-4 text-body-sm text-on-error-container" role="alert">
               <p className="font-semibold">We couldn&apos;t create your wedding</p>
@@ -359,7 +351,7 @@ export function WeddingOnboardingForm({
 
           <div className="mt-9 flex flex-col items-center">
             <button type="submit" disabled={pending} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-title-md font-semibold text-on-primary shadow-md shadow-primary/15 transition-all hover:bg-primary-container active:scale-[0.99] disabled:cursor-wait disabled:opacity-70 sm:w-auto sm:min-w-64">
-              {pending ? <Spinner /> : null}
+              {pending ? <LoadingSpinner /> : null}
               {pending ? "Creating your wedding…" : "Create wedding"}
               {!pending ? <ArrowIcon /> : null}
             </button>
@@ -408,6 +400,7 @@ function WeddingCreated({
   headingRef: RefObject<HTMLHeadingElement | null>;
   onContinue: () => void;
 }) {
+  const [openingWorkspace, setOpeningWorkspace] = useState(false);
   const formattedDate = new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "long",
@@ -445,8 +438,19 @@ function WeddingCreated({
         </dl>
       </div>
 
-      <button type="button" onClick={onContinue} className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-title-md font-semibold text-on-primary shadow-md transition-colors hover:bg-primary-container sm:w-auto sm:min-w-80">
-        Go to wedding workspace <ArrowIcon />
+      <button
+        type="button"
+        disabled={openingWorkspace}
+        aria-busy={openingWorkspace}
+        onClick={() => {
+          setOpeningWorkspace(true);
+          onContinue();
+        }}
+        className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-title-md font-semibold text-on-primary shadow-md transition-colors hover:bg-primary-container disabled:cursor-wait disabled:opacity-70 sm:w-auto sm:min-w-80"
+      >
+        {openingWorkspace ? <LoadingSpinner /> : null}
+        {openingWorkspace ? "Opening your workspace…" : "Go to wedding workspace"}
+        {!openingWorkspace ? <ArrowIcon /> : null}
       </button>
       <p className="mt-3 text-body-sm text-on-surface-variant">Private celebration space · Accessible only to invited organizers</p>
     </section>

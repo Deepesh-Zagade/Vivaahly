@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Brand } from "@/components/brand";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { UiIcon, type UiIconName } from "@/components/ui-icon";
 import { acceptOrganizerInvitationSchema } from "@/modules/organizers/organizer.schemas";
 import type { OrganizerInvitationAccessDto } from "@/modules/organizers/organizer.types";
@@ -107,16 +108,23 @@ export function OrganizerInvitationAcceptance({ token, initialAccess }: { token:
   async function signOutAndContinue() {
     setPending(true);
     setError(null);
+    let navigationStarted = false;
     try {
       const response = await fetchWithTimeout("/api/v1/auth/logout", { method: "POST" });
       if (!response.ok) throw new Error("logout failed");
+      navigationStarted = true;
       router.replace(returnTo);
       router.refresh();
     } catch {
       setError("Could not sign out. Please try again.");
     } finally {
-      setPending(false);
+      if (!navigationStarted) setPending(false);
     }
+  }
+
+  function openWorkspace() {
+    setPending(true);
+    router.push("/app");
   }
 
   return (
@@ -166,7 +174,12 @@ export function OrganizerInvitationAcceptance({ token, initialAccess }: { token:
             <section className={`flex flex-col gap-6 ${invitation ? "lg:col-span-7" : "lg:col-span-8 lg:col-start-3"}`}>
               <div className="overflow-hidden rounded-xl bg-surface-container-lowest p-6 shadow-[0_12px_32px_rgba(44,28,33,.09)] md:p-10">
                 {accepted && invitation ? (
-                  <AcceptedInvitationState invitation={invitation} organizer={acceptedOrganizer} />
+                  <AcceptedInvitationState
+                    invitation={invitation}
+                    organizer={acceptedOrganizer}
+                    openingWorkspace={pending}
+                    onOpenWorkspace={openWorkspace}
+                  />
                 ) : access.state === "NEW_USER" && invitation ? (
                   <div className="space-y-6">
                     <div><p className="text-label-sm font-semibold uppercase tracking-wider text-secondary">Step 1 of 1</p><h2 className="mt-1 font-headline-md text-headline-md text-on-surface">Create your account to join</h2><p className="mt-1.5 text-body-md text-on-surface-variant">Set up your private organizer account. It only takes a moment.</p></div>
@@ -183,7 +196,7 @@ export function OrganizerInvitationAcceptance({ token, initialAccess }: { token:
                         {fieldErrors.password?.[0] ? <p role="alert" className="flex items-center gap-1 text-body-sm text-error"><UiIcon name="warning" className="h-4 w-4" />{fieldErrors.password[0]}</p> : null}
                         <p className="text-body-sm text-on-surface-variant/80">Use at least 12 characters. A memorable passphrase works well; use single spaces between words.</p>
                       </div>
-                      <button disabled={pending} className={primaryButton}>{pending ? "Creating account…" : "Create account & join wedding"}<UiIcon name="arrow-right" className="h-5 w-5" /></button>
+                      <button disabled={pending} aria-busy={pending} className={primaryButton}>{pending ? <LoadingSpinner /> : null}{pending ? "Joining wedding…" : "Create account & join wedding"}{!pending ? <UiIcon name="arrow-right" className="h-5 w-5" /> : null}</button>
                     </form>
                     <div className="-mx-6 -mb-6 md:-mx-10 md:-mb-10"><div className="bg-surface-container-low p-6 text-center md:p-8"><p className="text-label-sm font-semibold uppercase tracking-wider text-on-surface-variant">Already have a Vivaahly account?</p><Link className="mt-2 inline-flex items-center gap-1 text-title-md font-semibold text-primary transition-colors hover:text-primary-container" href={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}>Already have an account? Sign in <UiIcon name="arrow-right" className="h-4 w-4" /></Link></div><div aria-hidden="true" className="h-5 bg-surface-container-lowest md:h-7" /></div>
                   </div>
@@ -192,13 +205,13 @@ export function OrganizerInvitationAcceptance({ token, initialAccess }: { token:
                 ) : access.state === "READY" && invitation ? (
                   <InvitationState icon="user-check" title="Ready to join the wedding team?" body={`You are accepting this invitation for ${invitation.coupleName}’s wedding.`}>
                     <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-container p-4 text-left shadow-sm"><div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-label-md font-bold text-on-primary-fixed">{initials(invitation.signedInName)}</span><div className="min-w-0"><p className="truncate text-title-md font-semibold">{invitation.signedInName ?? invitation.signedInEmail}</p><p className="truncate text-body-sm text-on-surface-variant">{invitation.signedInEmail}</p><p className="mt-1 text-body-sm font-medium text-primary">Role: {roleName(invitation.role)}</p></div></div><span className="rounded-full bg-primary-fixed px-2.5 py-1 text-label-sm font-medium text-on-primary-fixed">Active</span></div>
-                    <button type="button" disabled={pending} onClick={() => accept()} className={primaryButton}>{pending ? "Joining…" : "Accept invitation & join workspace"}<UiIcon name="check-circle" className="h-5 w-5" /></button>
+                    <button type="button" disabled={pending} aria-busy={pending} onClick={() => accept()} className={primaryButton}>{pending ? <LoadingSpinner /> : null}{pending ? "Joining wedding…" : "Accept invitation & join workspace"}{!pending ? <UiIcon name="check-circle" className="h-5 w-5" /> : null}</button>
                     <button type="button" disabled={pending} onClick={signOutAndContinue} className={secondaryButton}><UiIcon name="log-out" className="h-4 w-4" />Not your account? Sign out</button>
                   </InvitationState>
                 ) : access.state === "WRONG_ACCOUNT" && invitation ? (
                   <InvitationState icon="account-off" eyebrow="Account mismatch" title="This invitation is connected to another email" body="You’re currently signed in using a different email. Sign out and continue using the email address that received this invitation." tone="error">
                     <div className="space-y-2"><AccountRow label="Currently signed in" value={invitation.signedInEmail ?? "Another account"} /><AccountRow label="Invitation sent to" value={invitation.invitedEmailMasked} emphasize /></div>
-                    <button type="button" disabled={pending} onClick={signOutAndContinue} className={primaryButton}><UiIcon name="log-out" className="h-5 w-5" />{pending ? "Signing out…" : "Sign out and continue"}</button>
+                    <button type="button" disabled={pending} aria-busy={pending} onClick={signOutAndContinue} className={primaryButton}>{pending ? <LoadingSpinner /> : <UiIcon name="log-out" className="h-5 w-5" />}{pending ? "Signing out…" : "Sign out and continue"}</button>
                     <p className="text-center text-body-sm text-on-surface-variant/80">You’ll return to this invitation after signing out.</p><Link href="/" className={secondaryButton}>Back to Vivaahly</Link>
                   </InvitationState>
                 ) : access.state === "ACTIVE_MEMBERSHIP_CONFLICT" ? (
@@ -217,9 +230,11 @@ export function OrganizerInvitationAcceptance({ token, initialAccess }: { token:
   );
 }
 
-function AcceptedInvitationState({ invitation, organizer }: {
+function AcceptedInvitationState({ invitation, organizer, openingWorkspace, onOpenWorkspace }: {
   invitation: NonNullable<OrganizerInvitationAccessDto["invitation"]>;
   organizer: AcceptanceResponse["data"]["user"] | null;
+  openingWorkspace: boolean;
+  onOpenWorkspace: () => void;
 }) {
   const role = roleName(invitation.role);
   const accountEmail = organizer?.email ?? invitation.signedInEmail ?? invitation.invitedEmailMasked;
@@ -240,7 +255,11 @@ function AcceptedInvitationState({ invitation, organizer }: {
         <SuccessSummaryRow label="Account" value={accountEmail} />
       </div>
       <div className="pt-4">
-        <Link href="/app" className={`${primaryButton} mx-auto max-w-md shadow-md`}>Open wedding workspace <UiIcon name="dashboard" className="h-5 w-5" /></Link>
+        <button type="button" disabled={openingWorkspace} aria-busy={openingWorkspace} onClick={onOpenWorkspace} className={`${primaryButton} mx-auto max-w-md shadow-md`}>
+          {openingWorkspace ? <LoadingSpinner /> : null}
+          {openingWorkspace ? "Opening workspace…" : "Open wedding workspace"}
+          {!openingWorkspace ? <UiIcon name="dashboard" className="h-5 w-5" /> : null}
+        </button>
       </div>
     </div>
   );

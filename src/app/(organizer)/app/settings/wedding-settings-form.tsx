@@ -6,6 +6,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import {
   buildWeddingUpdateInput,
   changedWeddingFieldError,
@@ -120,6 +121,7 @@ export function WeddingSettingsForm({
     }
 
     setPending(true);
+    let navigationStarted = false;
 
     try {
       const response = await fetchWithTimeout("/api/v1/wedding", {
@@ -146,6 +148,7 @@ export function WeddingSettingsForm({
       }
 
       if (body.data?.wedding) {
+        navigationStarted = true;
         replaceAndRefreshWorkspace(
           router,
           "/app?notice=wedding-details-updated",
@@ -161,7 +164,7 @@ export function WeddingSettingsForm({
           : "We couldn't reach Vivaahly. Check your connection and try again.",
       );
     } finally {
-      setPending(false);
+      if (!navigationStarted) setPending(false);
     }
   }
 
@@ -197,6 +200,7 @@ export function WeddingSettingsForm({
       <form
         onSubmit={handleSubmit}
         noValidate
+        aria-busy={pending}
         className="rounded-3xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-[0_18px_45px_rgba(44,28,33,0.08)] sm:p-8 md:p-10"
       >
         {formError ? (
@@ -254,12 +258,12 @@ export function WeddingSettingsForm({
 
         <div className="mt-9 flex flex-col items-center gap-3">
           <div className="flex w-full flex-col-reverse items-center justify-center gap-3 sm:w-auto sm:flex-row">
-            <button type="button" onClick={() => router.push("/app")} className="min-h-12 w-full rounded-xl px-6 py-3 text-label-md font-semibold text-on-surface-variant transition-colors hover:bg-surface-container sm:w-auto">
+            <button type="button" disabled={pending} onClick={() => router.push("/app")} className="min-h-12 w-full rounded-xl px-6 py-3 text-label-md font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:cursor-wait disabled:opacity-60 sm:w-auto">
               {editable ? "Cancel" : "Back to workspace"}
             </button>
             {editable ? (
-              <button type="submit" disabled={pending} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-title-md font-semibold text-on-primary shadow-md shadow-primary/15 transition-all hover:bg-primary-container active:scale-[0.99] disabled:cursor-wait disabled:opacity-70 sm:w-auto sm:min-w-56">
-                {pending ? <Spinner /> : null}
+              <button type="submit" disabled={pending} aria-busy={pending} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-title-md font-semibold text-on-primary shadow-md shadow-primary/15 transition-all hover:bg-primary-container active:scale-[0.99] disabled:cursor-wait disabled:opacity-70 sm:w-auto sm:min-w-56">
+                {pending ? <LoadingSpinner /> : null}
                 {pending ? "Saving changes…" : "Save changes"}
                 {!pending ? <ArrowIcon /> : null}
               </button>
@@ -302,15 +306,6 @@ function ArrowIcon() {
   return (
     <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14m-5-5 5 5-5 5" />
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg aria-hidden="true" className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-      <circle className="opacity-30" cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" />
-      <path className="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v3a6 6 0 0 1 6 6h3Z" />
     </svg>
   );
 }

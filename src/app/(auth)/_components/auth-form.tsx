@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import {
   loginOrganizerSchema,
   registerOrganizerSchema,
@@ -83,15 +84,6 @@ function ArrowIcon() {
   );
 }
 
-function Spinner() {
-  return (
-    <svg aria-hidden="true" className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-      <circle className="opacity-30" cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" />
-      <path className="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v3a6 6 0 0 1 6 6h3Z" />
-    </svg>
-  );
-}
-
 const inputClassName =
   "w-full rounded-xl border border-transparent bg-surface-container-low py-3 pl-11 pr-4 text-body-md text-on-surface outline-none transition-all placeholder:text-outline focus:border-primary-container focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary-container/25 disabled:cursor-wait disabled:opacity-70";
 
@@ -99,6 +91,7 @@ export function AuthForm({ mode, registered = false, returnTo }: { mode: AuthMod
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
+  const [pendingLabel, setPendingLabel] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string[]>>>({});
   const isSignUp = mode === "sign-up";
@@ -135,6 +128,10 @@ export function AuthForm({ mode, registered = false, returnTo }: { mode: AuthMod
     }
 
     setPending(true);
+    setPendingLabel(
+      isSignUp ? "Creating your account..." : "Signing in...",
+    );
+    let navigationStarted = false;
 
     try {
       const response = await fetchWithTimeout(
@@ -154,8 +151,12 @@ export function AuthForm({ mode, registered = false, returnTo }: { mode: AuthMod
       }
 
       if (isSignUp) {
+        setPendingLabel("Account created. Opening sign in...");
+        navigationStarted = true;
         router.push("/sign-in?registered=1");
       } else {
+        setPendingLabel("Opening your workspace...");
+        navigationStarted = true;
         router.push(returnTo ?? "/app");
         router.refresh();
       }
@@ -166,7 +167,10 @@ export function AuthForm({ mode, registered = false, returnTo }: { mode: AuthMod
           : "We could not reach Vivaahly. Check your connection and try again.",
       );
     } finally {
-      setPending(false);
+      if (!navigationStarted) {
+        setPending(false);
+        setPendingLabel(null);
+      }
     }
   }
 
@@ -240,7 +244,8 @@ export function AuthForm({ mode, registered = false, returnTo }: { mode: AuthMod
               <button
                 type="button"
                 onClick={() => setShowPassword((current) => !current)}
-                className="inline-flex items-center gap-1 text-label-sm font-semibold text-on-surface-variant transition-colors hover:text-primary"
+                disabled={pending}
+                className="inline-flex items-center gap-1 text-label-sm font-semibold text-on-surface-variant transition-colors hover:text-primary disabled:cursor-wait disabled:opacity-60"
                 aria-controls="organizer-password"
                 aria-pressed={showPassword}
               >
@@ -287,14 +292,13 @@ export function AuthForm({ mode, registered = false, returnTo }: { mode: AuthMod
           <button
             type="submit"
             disabled={pending}
+            aria-busy={pending}
             className="group flex w-full items-center justify-center gap-2 rounded-xl bg-primary-container px-6 py-3.5 text-label-md font-semibold text-on-primary shadow-sm transition-all hover:bg-primary active:scale-[0.99] disabled:cursor-wait disabled:opacity-75"
           >
-            {pending ? <Spinner /> : null}
+            {pending ? <LoadingSpinner /> : null}
             <span>
               {pending
-                ? isSignUp
-                  ? "Creating your account..."
-                  : "Signing in..."
+                ? pendingLabel
                 : isSignUp
                   ? "Create your account"
                   : "Sign in"}
@@ -306,7 +310,11 @@ export function AuthForm({ mode, registered = false, returnTo }: { mode: AuthMod
         <div className="mt-6 border-t border-surface-container-highest pt-5 text-center">
           <Link
             href={isSignUp ? (returnTo ? `/sign-in?returnTo=${encodeURIComponent(returnTo)}` : "/sign-in") : "/sign-up"}
-            className="inline-flex items-center gap-1 text-label-md font-semibold text-primary no-underline transition-colors hover:text-primary-container"
+            aria-disabled={pending}
+            onClick={(event) => {
+              if (pending) event.preventDefault();
+            }}
+            className={`inline-flex items-center gap-1 text-label-md font-semibold text-primary no-underline transition-colors hover:text-primary-container ${pending ? "pointer-events-none opacity-60" : ""}`}
           >
             {isSignUp ? "Already have an account? Sign in" : "New to Vivaahly? Start planning"}
             <ArrowIcon />

@@ -6,6 +6,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { UiIcon } from "@/components/ui-icon";
 import {
   createEventSchema,
@@ -257,6 +258,7 @@ export function EventForm({
     }
 
     setPending(true);
+    let navigationStarted = false;
     try {
       const response = await fetchWithTimeout(
         event ? `/api/v1/events/${event.id}` : "/api/v1/events",
@@ -289,6 +291,7 @@ export function EventForm({
         setFormError("We couldn't confirm that the event was saved.");
         return;
       }
+      navigationStarted = true;
       router.replace(
         `/app/events/${body.data.event.id}?notice=${editing ? "event-updated" : "event-created"}`,
       );
@@ -300,7 +303,7 @@ export function EventForm({
           : "We couldn't reach Vivaahly. Check your connection and try again.",
       );
     } finally {
-      setPending(false);
+      if (!navigationStarted) setPending(false);
     }
   }
 
@@ -310,6 +313,7 @@ export function EventForm({
     <form
       onSubmit={handleSubmit}
       noValidate
+      aria-busy={pending}
       className="rounded-3xl border border-outline-variant/70 bg-surface-container-lowest p-5 shadow-[0_18px_45px_rgba(44,28,33,0.08)] sm:p-8 md:p-10"
     >
       {formError ? (
@@ -416,8 +420,8 @@ export function EventForm({
           Cancel
         </button>
         <button type="submit" disabled={pending} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3 text-title-md font-semibold text-on-primary shadow-md shadow-primary/15 transition-colors hover:bg-primary-container disabled:cursor-wait disabled:opacity-70">
-          {pending ? <Spinner /> : null}
-          {pending ? "Saving changes…" : editing ? "Save changes" : "Create event"}
+          {pending ? <LoadingSpinner /> : null}
+          {pending ? (editing ? "Saving changes…" : "Creating event…") : editing ? "Save changes" : "Create event"}
           {!pending ? <UiIcon name="arrow-right" className="h-4 w-4" /> : null}
         </button>
       </div>
@@ -448,14 +452,5 @@ function FormField({ id, label, required = false, optional = false, error, child
       {children}
       {error ? <p className="mt-1.5 text-[12px] leading-5 text-error" role="alert">{error}</p> : null}
     </div>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg aria-hidden="true" className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-      <circle className="opacity-30" cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" />
-      <path className="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v3a6 6 0 0 1 6 6h3Z" />
-    </svg>
   );
 }

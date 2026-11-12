@@ -1,6 +1,21 @@
 "use client";
 
-export default function OrganizerError({ reset }: { reset: () => void }) {
+import { useState } from "react";
+
+export function reloadOrganizerWorkspace(
+  reload: () => void = () => window.location.reload(),
+) {
+  reload();
+}
+
+export default function OrganizerError() {
+  const [retrying, setRetrying] = useState(false);
+
+  function handleRetry() {
+    setRetrying(true);
+    reloadOrganizerWorkspace();
+  }
+
   return (
     <main className="organizer-page flex min-h-screen items-center bg-surface px-margin-mobile py-14 font-body-md text-on-surface md:px-margin">
       <section className="mx-auto w-full max-w-xl rounded-3xl border border-outline-variant bg-surface-container-lowest p-7 text-center shadow-[0_18px_45px_rgba(44,28,33,0.08)] sm:p-10">
@@ -16,10 +31,12 @@ export default function OrganizerError({ reset }: { reset: () => void }) {
         </p>
         <button
           type="button"
-          onClick={reset}
-          className="mt-7 min-h-12 rounded-xl bg-primary px-7 py-3 text-label-md font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          onClick={handleRetry}
+          disabled={retrying}
+          aria-busy={retrying}
+          className="mt-7 min-h-12 rounded-xl bg-primary px-7 py-3 text-label-md font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:cursor-wait disabled:opacity-70"
         >
-          Try again
+          {retrying ? "Reconnecting…" : "Try again"}
         </button>
       </section>
     </main>

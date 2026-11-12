@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { UiIcon } from "@/components/ui-icon";
 import {
   fetchWithTimeout,
@@ -26,6 +27,7 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
     if (pending) return;
     setPending(true);
     setError(null);
+    let navigationStarted = false;
     try {
       const response = await fetchWithTimeout(`/api/v1/events/${eventId}`, {
         method: "DELETE",
@@ -37,6 +39,7 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
         setError(body.error?.message ?? "We couldn't remove this event.");
         return;
       }
+      navigationStarted = true;
       router.replace("/app/events?notice=event-removed");
       router.refresh();
     } catch (caught) {
@@ -46,7 +49,7 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
           : "We couldn't reach Vivaahly. Check your connection and try again.",
       );
     } finally {
-      setPending(false);
+      if (!navigationStarted) setPending(false);
     }
   }
 
@@ -99,6 +102,7 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
             <button
               type="button"
               disabled={pending}
+              aria-busy={pending}
               onClick={() => setOpen(false)}
               className="min-h-10 rounded-xl bg-surface-container px-4 py-2.5 text-title-md font-semibold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-60"
             >
@@ -110,7 +114,8 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
               onClick={removeEvent}
               className="min-h-10 rounded-xl bg-error px-5 py-2.5 text-title-md font-semibold text-on-error shadow-sm transition-colors hover:bg-on-error-container disabled:cursor-wait disabled:opacity-60"
             >
-              {pending ? "Removing…" : "Remove event"}
+              {pending ? <LoadingSpinner /> : null}
+              {pending ? "Removing event…" : "Remove event"}
             </button>
           </div>
         </div>
