@@ -25,6 +25,7 @@ export type UiIconName =
   | "manager"
   | "map-pin"
   | "refresh"
+  | "search"
   | "send"
   | "settings"
   | "tune"
@@ -58,6 +59,8 @@ const common = {
 
 function paths(name: UiIconName): ReactNode {
   switch (name) {
+    case "search":
+      return <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>;
     case "menu":
       return <><path d="M4 6h16M4 12h16M4 18h16" /></>;
     case "plus":

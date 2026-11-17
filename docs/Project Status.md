@@ -1,7 +1,7 @@
 # Vivaahly Project Status
 
-**Last updated:** 2026-11-12
-**Current phase:** Event Management and workspace loading/resilience improvements deployed to QA
+**Last updated:** 2026-11-17
+**Current phase:** Guest Directory increment 1 implemented and ready for QA validation
 **Active branch:** `dev`
 
 ## Purpose
@@ -27,9 +27,10 @@ The finalized PRD, System Design, Database Design, and API Design documents rema
 | Organizer application | Foundation complete | `/app` now provides the responsive organizer workspace shell and dashboard, backed by authoritative wedding and organizer context while clearly separating local preview data from unimplemented planning modules. |
 | Event management | Complete | Active organizers can create, view, edit, and remove up to ten wedding events through the responsive organizer workspace, with authoritative tenant isolation and wedding-timezone date handling. |
 | Workspace loading and resilience | Complete | Route-level skeletons, action-specific progress feedback, a functional database-recovery retry, and a clearer ceremony timeline now provide consistent responsive feedback throughout organizer workflows. |
-| Guest invitation experience | Not started | Invitation entry and invitation-scoped guest functionality have not been implemented. |
+| Guest directory and event assignment | Complete locally | Organizers can manage individual and family guest records, tags, private notes, active-event assignments, filtering, and scalable pagination; authoritative guest counts now feed the workspace dashboard. |
+| Guest invitation delivery and RSVP | Not started | Personalized guest invitation delivery, resend/revoke controls, invitation-scoped access, and per-event RSVP remain future increments. |
 | Media Hub | Not started | Media access and Media Hub functionality have not been implemented. |
-| Database and external providers | In progress | MongoDB native-driver infrastructure and explicit authentication, wedding, membership, organizer-invitation, and event indexes are implemented. Resend organizer-invitation delivery is implemented; Cloudflare R2 remains deferred. |
+| Database and external providers | In progress | MongoDB native-driver infrastructure and explicit authentication, wedding, membership, organizer-invitation, event, guest, and guest-event assignment indexes are implemented. Resend organizer-invitation delivery is implemented; Cloudflare R2 remains deferred. |
 
 ## Completed Milestones
 
@@ -492,6 +493,36 @@ Verification:
 - The optimized Next.js production build completed successfully with the supported webpack builder.
 - Feature commit `36b08b0` completed its Vercel Preview deployment successfully, and `qa.vivaahly.bond` was verified to serve that deployment's exact Next.js asset set with healthy public and database-backed responses.
 
+### 20. Guest Directory and event assignment
+
+**Status:** Complete locally; QA validation follows the `dev` deployment
+
+Delivered:
+
+- Added responsive organizer routes for the populated and empty guest directory, guest creation, guest details, guest editing, and confirmed removal under `/app/guests`.
+- Added authenticated Guest API routes that derive the authoritative Wedding tenant from the active organizer membership instead of accepting a browser-supplied `weddingId`.
+- Added Guest domain schemas, services, navigation and pagination helpers, MongoDB repository ownership, and explicit indexes for guest records, guest invitations, and guest-event relationships.
+- Added individual and family records with bilingual names, a family primary contact, optional email and phone references, organizer-only notes, and the approved wedding-side and relationship tags.
+- Added active-event assignment during creation and editing while preserving historical guest-event relationships for soft-deleted events. Deleted events are excluded from editable selections and cannot block an otherwise valid guest update.
+- Added name search and type, tag, and ceremony filtering with URL-backed state, focused list loading rather than full-page replacement, and compact reset controls.
+- Added scalable pagination with numbered pages, ellipses, Previous/Next controls, 10/50/100 results-per-page options, out-of-range normalization, and preservation of filters, page, and page size across view/edit/back flows.
+- Added five-row directory loading skeletons for filter and pagination transitions, responsive table/card presentation, and compact forms and guest-detail layouts aligned with the approved Stitch direction and existing Vivaahly interaction patterns.
+- Connected dashboard guest totals, individual/family and wedding-side summaries, per-event invited counts, Guest navigation, and Add guest actions to authoritative Guest data.
+- Added a local pagination seed utility for repeatable high-volume directory testing without treating seed records as application fixtures.
+
+Verification:
+
+- User-led local smoke testing passed guest CRUD, active-event assignment, search, filters, pagination, page-size changes, state restoration, and responsive UI review.
+- The deleted-event assignment regression was reproduced and corrected without deleting or rewriting the historical relationship.
+- Type checking passed.
+- Focused linting passed.
+- The complete automated suite passed with 171 tests across 41 files.
+
+Intentional limitations:
+
+- Personalized guest invitation delivery, resend/revoke operations, and the public `/i/[accessKey]` experience remain the next Guest vertical increment.
+- Per-event RSVP submission, response summaries, and RSVP filters remain the final planned Guest vertical increment.
+
 ## Current Verification State
 
 At the completion of the initial Vercel production-deployment milestone:
@@ -513,6 +544,7 @@ At the completion of the initial Vercel production-deployment milestone:
 - The finalized primary, monochrome, reversed, horizontal, and favicon SVG assets passed XML validation, and the repository passed type checking after the asset replacement.
 - The organizer invitation and membership-management implementation passed linting, type checking, and the complete 125-test suite across 28 files.
 - The Event Management implementation passed linting, type checking, and the complete 150-test suite across 34 files; code review and manual QA reported no remaining defects.
+- The Guest Directory increment passed type checking, focused linting, the complete 171-test suite across 41 files, and user-led local smoke testing of CRUD, event assignment, filters, pagination, loading, and state restoration.
 - The repeatable Atlas index command created the organizer invitation token, wedding/email/status, pending-email uniqueness, and expiration indexes successfully.
 - Live Resend email delivery and end-to-end browser QA passed for the organizer invitation lifecycle, including accepted, revoked, wrong-account, and unavailable-link states.
 - Linting passed.
@@ -538,7 +570,7 @@ Run the repository scripts again after future implementation changes; this secti
 
 ## Current Implementation Boundary
 
-The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, organizer membership management, the responsive organizer workspace/dashboard foundation, and Wedding Event Management. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain guest invitations and RSVP, tasks, vendors, expenses, media storage, or Media Hub access.
+The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, organizer membership management, the responsive organizer workspace/dashboard foundation, Wedding Event Management, and the organizer-facing Guest Directory with active-event assignment. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain personalized guest invitation delivery or RSVP, tasks, vendors, expenses, media storage, or Media Hub access.
 
 Production and QA deployment boundaries are now operational. The recommended next step is to run future feature and regression testing through `qa.vivaahly.bond`, promote only reviewed `dev` changes to `main`, and resume planning the next vertical product increment.
 

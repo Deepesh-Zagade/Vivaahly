@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UiIcon, type UiIconName } from "@/components/ui-icon";
 import type { WeddingMemberRole } from "@/modules/wedding/wedding.types";
+import type { GuestSummary } from "@/modules/guests/guest.types";
 
 type DashboardContentProps = {
   organizerName: string;
@@ -14,6 +15,8 @@ type DashboardContentProps = {
     upcoming: boolean;
   }>;
   members: Array<{ id: string; name: string; role: WeddingMemberRole }>;
+  guestSummary: GuestSummary;
+  eventGuestCounts: Record<string, number>;
 };
 
 type DashboardEvent = DashboardContentProps["events"][number];
@@ -35,13 +38,7 @@ const demoTasks = [
   ["Upload venue map and decorator quotation", "Not Started", "Due December 13", "Sangeet", "Rahul"],
 ] as const;
 
-const demoResponses = [
-  { name: "Sangeet", total: 184, attending: 142, awaiting: 28, declined: 14 },
-  { name: "Wedding Ceremony", total: 320, attending: 247, awaiting: 38, declined: 35 },
-  { name: "Reception", total: 380, attending: 280, awaiting: 62, declined: 38 },
-];
-
-export function DashboardContent({ organizerName, showDemoData, events, members }: DashboardContentProps) {
+export function DashboardContent({ organizerName, showDemoData, events, members, guestSummary, eventGuestCounts }: DashboardContentProps) {
   const nextEvent = events.find((event) => event.upcoming) ?? null;
   return (
     <>
@@ -52,18 +49,18 @@ export function DashboardContent({ organizerName, showDemoData, events, members 
 
       <section aria-label="Quick actions" className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:gap-3">
         <QuickLink href="/app/events/new" icon="plus" label="Create event" primary />
-        <FutureAction icon="user-plus" label="Add guest" />
+        <QuickLink href="/app/guests/new" icon="user-plus" label="Add guest" />
         <FutureAction icon="wallet" label="Record expense" />
         <QuickLink href="/app/organizers" icon="users" label="Manage organizers" />
         <QuickLink href="/app/settings" icon="edit" label="Edit wedding details" />
       </section>
 
-      <NextCeremony event={nextEvent} />
+      <NextCeremony event={nextEvent} guestCount={nextEvent ? (eventGuestCounts[nextEvent.id] ?? 0) : 0} />
 
       <section aria-label="Wedding overview" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon="users" label="Guests & RSVP" value={showDemoData ? "320 Guests" : "0 Guests"}>
-          <p className="font-semibold text-on-surface">Main wedding ceremony:</p>
-          <p>{showDemoData ? "247 attending · 38 awaiting · 35 not attending" : "Guest planning has not started"}</p>
+        <StatCard icon="users" label="Guest directory" value={`${guestSummary.total} ${guestSummary.total === 1 ? "Record" : "Records"}`}>
+          <p className="font-semibold text-on-surface">{guestSummary.individual} individual · {guestSummary.family} family</p>
+          <p>{guestSummary.total ? `${guestSummary.brideSide} bride's side · ${guestSummary.groomSide} groom's side` : "Guest planning has not started"}</p>
         </StatCard>
         <StatCard icon="calendar" label="Wedding events" value={`${events.length} Active ${events.length === 1 ? "Event" : "Events"}`}>
           <p><strong className="font-semibold text-on-surface">Next: </strong>{nextEvent?.title ?? "No event scheduled"}</p>
@@ -81,7 +78,7 @@ export function DashboardContent({ organizerName, showDemoData, events, members 
 
       <div className="grid grid-cols-1 items-start gap-8 2xl:grid-cols-12">
         <div className="flex flex-col gap-8 2xl:col-span-7"><Priorities showDemoData={showDemoData} /><Timeline events={events} /></div>
-        <div className="flex flex-col gap-8 2xl:col-span-5"><GuestSnapshot showDemoData={showDemoData} /><GuestExperience /><ActiveOrganizers members={members} /><RecentActivity showDemoData={showDemoData} /></div>
+        <div className="flex flex-col gap-8 2xl:col-span-5"><GuestSnapshot summary={guestSummary} /><GuestExperience /><ActiveOrganizers members={members} /><RecentActivity showDemoData={showDemoData} /></div>
       </div>
     </>
   );
@@ -95,8 +92,8 @@ function QuickLink({ href, icon, label, primary = false }: { href: string; icon:
   return <Link href={href} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-center text-xs font-semibold shadow-sm transition-colors sm:text-sm ${primary ? "bg-primary text-on-primary hover:bg-primary-container" : "border border-outline-variant bg-white text-on-surface hover:bg-surface-container-low"}`}><UiIcon name={icon} className={`h-4 w-4 ${primary ? "text-on-primary" : "text-primary"}`} />{label}</Link>;
 }
 
-function NextCeremony({ event }: { event: DashboardContentProps["events"][number] | null }) {
-  return <section className="relative overflow-hidden rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5"><span className="absolute inset-y-0 left-0 w-1.5 bg-primary" /><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"><div className="flex max-w-3xl flex-col gap-2"><div className="flex flex-wrap items-center gap-2.5"><span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Next ceremony</span><span className="flex items-center gap-1 text-xs font-medium text-on-surface-variant"><UiIcon name="clock" className="h-3.5 w-3.5 text-primary" />{event?.timeLabel ?? "No ceremony scheduled"}</span></div><h3 className="font-headline-lg text-2xl font-semibold tracking-tight text-on-surface">{event?.title ?? "Your first event will appear here"}</h3><p className="flex items-center gap-1 text-xs font-medium text-on-surface-variant sm:text-sm"><UiIcon name="map-pin" className="h-4 w-4 text-primary" />{event?.location ?? "Create an event to begin the ceremony timeline"}</p><div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-3"><CeremonyMetric icon="users" value="0 Expected" detail="Guest planning not started" /><CeremonyMetric icon="clipboard-check" value="0 Tasks Due" detail="Task planning not started" /><CeremonyMetric icon="receipt" value="0 Vendors" detail="No vendors linked" /></div></div><Link href={event ? `/app/events/${event.id}` : "/app/events"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container"><UiIcon name="arrow-right" className="h-4 w-4" />{event ? "View event details" : "View wedding events"}</Link></div></section>;
+function NextCeremony({ event, guestCount }: { event: DashboardContentProps["events"][number] | null; guestCount: number }) {
+  return <section className="relative overflow-hidden rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5"><span className="absolute inset-y-0 left-0 w-1.5 bg-primary" /><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"><div className="flex max-w-3xl flex-col gap-2"><div className="flex flex-wrap items-center gap-2.5"><span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Next ceremony</span><span className="flex items-center gap-1 text-xs font-medium text-on-surface-variant"><UiIcon name="clock" className="h-3.5 w-3.5 text-primary" />{event?.timeLabel ?? "No ceremony scheduled"}</span></div><h3 className="font-headline-lg text-2xl font-semibold tracking-tight text-on-surface">{event?.title ?? "Your first event will appear here"}</h3><p className="flex items-center gap-1 text-xs font-medium text-on-surface-variant sm:text-sm"><UiIcon name="map-pin" className="h-4 w-4 text-primary" />{event?.location ?? "Create an event to begin the ceremony timeline"}</p><div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-3"><CeremonyMetric icon="users" value={`${guestCount} Invited`} detail={guestCount ? "Active guest records" : "No guests assigned"} /><CeremonyMetric icon="clipboard-check" value="0 Tasks Due" detail="Task planning not started" /><CeremonyMetric icon="receipt" value="0 Vendors" detail="No vendors linked" /></div></div><Link href={event ? `/app/events/${event.id}` : "/app/events"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container"><UiIcon name="arrow-right" className="h-4 w-4" />{event ? "View event details" : "View wedding events"}</Link></div></section>;
 }
 
 function CeremonyMetric({ icon, value, detail }: { icon: UiIconName; value: string; detail: string }) {
@@ -210,16 +207,12 @@ function timelineTimeLabel(timeLabel: string) {
   return timeLabel.replace(/\s+(?:[A-Z]{2,5}|GMT[+-]\d{1,2}(?::\d{2})?)$/u, "");
 }
 
-function GuestSnapshot({ showDemoData }: { showDemoData: boolean }) {
-  return <Card><CardHeader title="RSVP & Guest Snapshot" description="RSVP and event-by-event responses" subtitle={showDemoData ? "312 total" : "0 total"} /><div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2"><GuestSide label="Groom's side" value={showDemoData ? 168 : 0} primary /><GuestSide label="Bride's side" value={showDemoData ? 144 : 0} /></div><div className="border-b border-outline-variant/50 pb-2 text-xs font-semibold uppercase tracking-wider text-outline">Event responses</div><div className="flex flex-col gap-3.5">{showDemoData ? demoResponses.map((response) => <ResponseBar key={response.name} {...response} />) : <EmptyState text="Guest responses will appear after invitations are sent." />}</div></Card>;
+function GuestSnapshot({ summary }: { summary: GuestSummary }) {
+  return <Card><CardHeader title="Guest Directory Snapshot" description="Active individual and family records" subtitle={`${summary.total} total`} action="View directory" actionHref="/app/guests" /><div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2"><GuestSide label="Groom's side" value={summary.groomSide} primary /><GuestSide label="Bride's side" value={summary.brideSide} /></div><div className="grid grid-cols-2 gap-3"><GuestSide label="Individuals" value={summary.individual} primary /><GuestSide label="Families" value={summary.family} /></div>{summary.total ? null : <EmptyState text="Add an individual or family to begin the wedding guest directory." />}</Card>;
 }
 
 function GuestSide({ label, value, primary = false }: { label: string; value: number; primary?: boolean }) {
   return <div className="rounded-xl border border-outline-variant/60 bg-surface-container-low p-3.5"><p className="text-xs font-semibold uppercase text-outline">{label}</p><p className="mt-1 flex items-baseline gap-1"><strong className={`text-xl ${primary ? "text-primary" : "text-secondary"}`}>{value}</strong><span className="text-xs font-medium text-on-surface-variant">Guests</span></p></div>;
-}
-
-function ResponseBar({ name, total, attending, awaiting, declined }: (typeof demoResponses)[number]) {
-  return <div className="flex flex-col gap-2 rounded-xl border border-outline-variant/60 bg-surface-container-low p-3"><div className="flex items-center justify-between gap-2 text-xs"><strong className="text-on-surface">{name}</strong><span className="font-medium text-primary">{total} responses</span></div><div className="flex h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high"><span className="h-full bg-primary" style={{ width: `${(attending / total) * 100}%` }} /><span className="h-full bg-tertiary-fixed-dim" style={{ width: `${(awaiting / total) * 100}%` }} /><span className="h-full bg-secondary-container" style={{ width: `${(declined / total) * 100}%` }} /></div><div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]"><span className="text-primary"><strong>{attending}</strong> Attending</span><span className="text-outline">·</span><span className="text-[#8e6c38]"><strong>{awaiting}</strong> Awaiting</span><span className="text-outline">·</span><span className="text-secondary"><strong>{declined}</strong> Not attending</span></div></div>;
 }
 
 function GuestExperience() {

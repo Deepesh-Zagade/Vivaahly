@@ -2,6 +2,7 @@ import { ensureAuthIndexes } from "../src/modules/auth/repositories/mongodb-auth
 import { ensureWeddingIndexes } from "../src/modules/wedding/repositories/mongodb-wedding.repository";
 import { ensureOrganizerIndexes } from "../src/modules/organizers/repositories/mongodb-organizer.repository";
 import { ensureEventIndexes } from "../src/modules/events/repositories/mongodb-event.repository";
+import { ensureGuestIndexes } from "../src/modules/guests/repositories/mongodb-guest.repository";
 import {
   closeMongoClient,
   getMongoDatabase,
@@ -14,8 +15,9 @@ async function main() {
     ensureWeddingIndexes(database),
     ensureOrganizerIndexes(database),
     ensureEventIndexes(database),
+    ensureGuestIndexes(database),
   ]);
-  console.info("Vivaahly authentication, wedding, organizer, and event indexes are ready.");
+  console.info("Vivaahly authentication, wedding, organizer, event, and guest indexes are ready.");
 }
 
 async function run() {

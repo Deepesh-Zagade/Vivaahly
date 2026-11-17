@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   getWorkspaceWedding: vi.fn(),
   getOrganizerService: vi.fn(),
   getEventService: vi.fn(),
+  getGuestService: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
@@ -22,6 +23,9 @@ vi.mock("@/modules/organizers/organizer.server", () => ({
 vi.mock("@/modules/events/event.server", () => ({
   getEventService: mocks.getEventService,
 }));
+vi.mock("@/modules/guests/guest.server", () => ({
+  getGuestService: mocks.getGuestService,
+}));
 
 import OrganizerWorkspacePage from "@/app/(organizer)/app/page";
 
@@ -32,6 +36,16 @@ beforeEach(() => {
   });
   mocks.getEventService.mockResolvedValue({
     listEvents: vi.fn().mockResolvedValue([]),
+  });
+  mocks.getGuestService.mockResolvedValue({
+    getSummary: vi.fn().mockResolvedValue({
+      total: 0,
+      individual: 0,
+      family: 0,
+      brideSide: 0,
+      groomSide: 0,
+    }),
+    assignmentCounts: vi.fn().mockResolvedValue({}),
   });
   mocks.redirect.mockImplementation((destination: string) => {
     throw new Error(`redirect:${destination}`);
@@ -69,7 +83,7 @@ describe("organizer workspace routing", () => {
     );
 
     expect(markup).toContain("Welcome back, Deepesh");
-    expect(markup).toContain("0 Guests");
+    expect(markup).toContain("0 Records");
     expect(mocks.getWorkspaceWedding).toHaveBeenCalledWith(membership);
     expect(mocks.redirect).not.toHaveBeenCalled();
   });

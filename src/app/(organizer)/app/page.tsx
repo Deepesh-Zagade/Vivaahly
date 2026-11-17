@@ -9,6 +9,7 @@ import {
   formatEventTimeRange,
 } from "@/modules/events/event.presentation";
 import { getEventService } from "@/modules/events/event.server";
+import { getGuestService } from "@/modules/guests/guest.server";
 import { getOrganizerService } from "@/modules/organizers/organizer.server";
 
 export const metadata: Metadata = { title: "Organizer workspace" };
@@ -28,11 +29,17 @@ export default async function OrganizerWorkspacePage({
 
   if (!organizer.membership) redirect("/app/onboarding");
 
-  const [wedding, management, events] = await Promise.all([
+  const guestService = await getGuestService();
+  const [wedding, management, events, guestSummary] = await Promise.all([
     getWorkspaceWedding(organizer.membership),
     (await getOrganizerService()).getOrganizerManagement(organizer),
     (await getEventService()).listEvents(organizer.membership),
+    guestService.getSummary(organizer.membership),
   ]);
+  const eventGuestCounts = await guestService.assignmentCounts(
+    organizer.membership,
+    events.map((event) => event.id),
+  );
   const showDemoData =
     process.env.NODE_ENV === "development" ||
     process.env.DASHBOARD_DEMO_DATA === "true";
@@ -65,6 +72,8 @@ export default async function OrganizerWorkspacePage({
           name: member.name,
           role: member.role,
         }))}
+        guestSummary={guestSummary}
+        eventGuestCounts={eventGuestCounts}
       />
     </main>
   );

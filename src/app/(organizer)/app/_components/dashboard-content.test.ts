@@ -20,6 +20,14 @@ describe("dashboard ceremony timeline", () => {
         showDemoData: false,
         events,
         members: [],
+        guestSummary: {
+          total: 0,
+          individual: 0,
+          family: 0,
+          brideSide: 0,
+          groomSide: 0,
+        },
+        eventGuestCounts: {},
       }),
     );
 
