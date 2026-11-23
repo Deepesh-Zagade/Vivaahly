@@ -1,5 +1,7 @@
 import { guestListQuerySchema } from "@/modules/guests/guest.schemas";
 import type { GuestListQuery } from "@/modules/guests/guest.types";
+import { invitationListQuerySchema } from "@/modules/guest-invitations/guest-invitation.schemas";
+import type { InvitationListQuery } from "@/modules/guest-invitations/guest-invitation.types";
 
 export const GUEST_PAGE_SIZES = [10, 50, 100] as const;
 export type GuestDirectoryNotice =
@@ -33,9 +35,21 @@ export function normalizeGuestDirectoryReturnTo(
 
   try {
     const url = new URL(candidate, "https://vivaahly.local");
-    if (url.origin !== "https://vivaahly.local" || url.pathname !== "/app/guests") {
+    if (url.origin !== "https://vivaahly.local") {
       return "/app/guests";
     }
+    if (url.pathname === "/app/invitations") {
+      const parsed = invitationListQuerySchema.safeParse({
+        q: url.searchParams.get("q") ?? undefined,
+        status: url.searchParams.get("status") ?? undefined,
+        guestType: url.searchParams.get("guestType") ?? undefined,
+        eventId: url.searchParams.get("eventId") ?? undefined,
+        page: url.searchParams.get("page") ?? undefined,
+        pageSize: url.searchParams.get("pageSize") ?? undefined,
+      });
+      return parsed.success ? buildInvitationReturnHref(parsed.data) : "/app/invitations";
+    }
+    if (url.pathname !== "/app/guests") return "/app/guests";
     const parsed = guestListQuerySchema.safeParse({
       q: url.searchParams.get("q") ?? undefined,
       guestType: url.searchParams.get("guestType") ?? undefined,
@@ -64,12 +78,30 @@ export function buildGuestEditHref(guestId: string, returnTo: string) {
   return `/app/guests/${guestId}/edit?${new URLSearchParams({ returnTo })}`;
 }
 
+export function buildGuestEditExitHref(guestId: string, returnTo: string) {
+  const normalized = normalizeGuestDirectoryReturnTo(returnTo);
+  if (normalized.startsWith("/app/invitations")) return normalized;
+  return buildGuestDetailsHref(guestId, normalized);
+}
+
 export function addGuestDirectoryNotice(
   returnTo: string,
   notice: GuestDirectoryNotice,
 ) {
   const normalized = normalizeGuestDirectoryReturnTo(returnTo);
   const url = new URL(normalized, "https://vivaahly.local");
+  if (url.pathname === "/app/invitations") return normalized;
   url.searchParams.set("notice", notice);
   return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
+function buildInvitationReturnHref(query: InvitationListQuery) {
+  const parameters = new URLSearchParams();
+  if (query.q) parameters.set("q", query.q);
+  if (query.status) parameters.set("status", query.status);
+  if (query.guestType) parameters.set("guestType", query.guestType);
+  if (query.eventId) parameters.set("eventId", query.eventId);
+  if (query.page > 1) parameters.set("page", String(query.page));
+  if (query.pageSize !== 10) parameters.set("pageSize", String(query.pageSize));
+  return parameters.size ? `/app/invitations?${parameters}` : "/app/invitations";
 }

@@ -471,6 +471,8 @@ Example:
 
 Organizers select the events associated with each guest invitation.
 
+A guest or family record may temporarily have no event assignments while planning is incomplete. However, Vivaahly must not send its personalized invitation until at least one active event is assigned.
+
 Guests must only see events to which they have been invited.
 
 Events that are not part of the guest's invitation should not appear in the guest-facing experience.
@@ -513,6 +515,8 @@ The digital invitation should include:
 - RSVP CTA
 
 Invitations will be sent by email in the MVP.
+
+Organizers may retry failed deliveries, revoke invitation access, and restore a revoked invitation. Restoring access must create a new private link; the previously revoked link remains invalid.
 
 The MVP will not include:
 

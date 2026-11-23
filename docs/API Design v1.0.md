@@ -1892,6 +1892,16 @@ The UI initiates individual downloads in manageable batches.
 
 # 62. Email Campaign API
 
+Organizer-side invitation access management uses:
+
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| `PATCH` | `/guest-invitations/{guestId}/email` | Organizer | Add or correct the primary delivery email |
+| `POST` | `/guest-invitations/{guestId}/revoke` | Organizer | Revoke the current personalized link |
+| `POST` | `/guest-invitations/{guestId}/restore` | Organizer | Restore access with a newly rotated private link |
+
+Restoration preserves campaign history and never reactivates the revoked link.
+
 Base:
 
 ```text
@@ -1904,7 +1914,7 @@ Base:
 | `GET` | `/email-campaigns/{campaignId}` | Organizer | Campaign progress |
 | `GET` | `/email-campaigns/{campaignId}/recipients` | Organizer | Recipient states |
 | `POST` | `/email-campaigns/{campaignId}/send-next` | Organizer | Send next pending batch |
-| `POST` | `/email-campaigns/{campaignId}/retry-failed` | Organizer | Move retryable failed recipients back to pending/send |
+| `POST` | `/email-campaigns/{campaignId}/retry-failed` | Organizer | Create a fresh campaign for currently retryable failed recipients |
 
 V1 intentionally has no external queue service.
 
@@ -1928,12 +1938,17 @@ POST /api/v1/email-campaigns
 The service:
 
 1. verifies guests belong to current wedding
-2. ensures each has an email and active invitation
-3. creates campaign
-4. creates recipient rows with email snapshots
-5. returns campaign status
+2. ensures each has an email, an active invitation, and at least one active assigned event
+3. treats a failed delivery as retryable while excluding sent, revoked, missing-email, and zero-event records from first-send eligibility
+4. creates campaign
+5. creates recipient rows with email snapshots
+6. returns campaign status
 
 A campaign is immutable in recipient membership once sending starts.
+
+Retrying failures creates a new campaign containing only recipients that are still failed and currently eligible. The retry campaign captures the guest's current email address and invitation state; the source campaign and its historical email snapshots remain unchanged. A single-recipient retry uses the same rule.
+
+Provider delivery outcomes are isolated per recipient. One rejected address must not cause another valid recipient in the same application batch to be marked failed.
 
 ---
 

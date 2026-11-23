@@ -1,0 +1,3 @@
+export default function GuestInvitationLoading() {
+  return <main className="min-h-screen animate-pulse bg-surface px-4 py-6 sm:py-10"><div className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-outline-variant/50 bg-white"><div className="h-20 bg-surface-container-low" /><div className="h-72 bg-primary/80" /><div className="space-y-4 p-8"><div className="h-8 w-64 rounded bg-surface-container" /><div className="h-4 w-full rounded bg-surface-container" /><div className="h-4 w-4/5 rounded bg-surface-container" /><div className="grid gap-3 pt-5 sm:grid-cols-2"><div className="h-40 rounded-2xl bg-surface-container-low" /><div className="h-40 rounded-2xl bg-surface-container-low" /></div></div></div></main>;
+}

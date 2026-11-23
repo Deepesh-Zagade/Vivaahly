@@ -45,6 +45,7 @@ export default async function GuestDetailsPage({ params, searchParams }: { param
   const notice = parseNotice(query.notice);
   const guest = details.guest;
   const returnTo = normalizeGuestDirectoryReturnTo(query.returnTo);
+  const returningToInvitations = returnTo.startsWith("/app/invitations");
   const editHref = buildGuestEditHref(guest.id, returnTo);
   const invitedEventDays = new Map<string, number>();
   for (const event of events) {
@@ -55,7 +56,7 @@ export default async function GuestDetailsPage({ params, searchParams }: { param
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
       {notice ? <GuestSuccessNotice notice={notice} /> : null}
-      <Link href={returnTo} className="group inline-flex min-h-10 items-center gap-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:text-primary"><UiIcon name="arrow-left" className="h-[18px] w-[18px] transition-transform group-hover:-translate-x-0.5" />Back to Wedding Guests</Link>
+      <Link href={returnTo} className="group inline-flex min-h-10 items-center gap-2 text-label-md font-semibold text-on-surface-variant transition-colors hover:text-primary"><UiIcon name="arrow-left" className="h-[18px] w-[18px] transition-transform group-hover:-translate-x-0.5" />{returningToInvitations ? "Back to Guest Invitations" : "Back to Wedding Guests"}</Link>
 
       <header className="mt-2 border-b border-outline-variant/60 pb-4">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
@@ -85,8 +86,11 @@ export default async function GuestDetailsPage({ params, searchParams }: { param
             {guest.organizerNotes ? <p className="whitespace-pre-wrap text-body-md leading-6 text-on-surface">{guest.organizerNotes}</p> : <EmptyBlock text="No private organizer notes have been added." />}
           </DetailCard>
 
-          <section className="rounded-2xl border border-outline-variant/60 bg-surface-container-low p-4">
-            <div className="flex items-start gap-3"><UiIcon name="lock" className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><div><h2 className="text-title-md font-semibold text-on-surface">Guest access boundary</h2><p className="mt-1 text-body-sm leading-5 text-on-surface-variant">This increment records ceremony access. Invitation delivery and guest RSVP controls will be added separately.</p></div></div>
+          <section className="rounded-2xl border border-primary/15 bg-primary-fixed/30 p-4">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-primary shadow-sm"><UiIcon name="mail-lock" className="h-4 w-4" /></span><div><h2 className="text-title-md font-semibold text-on-surface">Personalized invitation delivery</h2><p className="mt-1 text-body-sm leading-5 text-on-surface-variant">Send, resend, or revoke this guest&apos;s private invitation from the delivery workspace.</p></div></div>
+              <Link href={`/app/invitations?${new URLSearchParams({ q: guest.displayName.en })}`} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-label-sm font-semibold text-on-primary"><UiIcon name="mail-out" className="h-4 w-4" />Manage invitation</Link>
+            </div>
           </section>
         </div>
 

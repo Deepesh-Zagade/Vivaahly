@@ -16,7 +16,10 @@ import {
   type GuestTag,
   type GuestType,
 } from "@/modules/guests/guest.types";
-import { buildGuestDetailsHref } from "@/modules/guests/guest.navigation";
+import {
+  buildGuestDetailsHref,
+  buildGuestEditExitHref,
+} from "@/modules/guests/guest.navigation";
 import {
   fetchWithTimeout,
   RequestTimeoutError,
@@ -405,7 +408,7 @@ export function GuestForm({
       </FormSection>
 
       <div className="flex flex-col-reverse justify-end gap-2 pt-1 sm:flex-row xl:col-span-2">
-        <button type="button" disabled={pending} onClick={() => router.push(guest ? buildGuestDetailsHref(guest.id, returnTo) : returnTo)} className="min-h-12 rounded-xl px-6 py-3 text-label-md font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60">Cancel</button>
+        <button type="button" disabled={pending} onClick={() => router.push(guest ? buildGuestEditExitHref(guest.id, returnTo) : returnTo)} className="min-h-12 rounded-xl px-6 py-3 text-label-md font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60">Cancel</button>
         <button type="submit" disabled={pending} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3 text-title-md font-semibold text-on-primary shadow-md shadow-primary/15 transition-colors hover:bg-primary-container disabled:cursor-wait disabled:opacity-70">
           {pending ? <LoadingSpinner /> : null}
           {pending ? (editing ? "Saving changes…" : "Adding guest…") : editing ? "Save changes" : "Add guest"}

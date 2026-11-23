@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 type BrandProps = {
-  href?: string;
+  href?: string | null;
   inverse?: boolean;
   className?: string;
   showWordmark?: boolean;
@@ -14,12 +14,8 @@ export function Brand({
   className = "",
   showWordmark = true,
 }: BrandProps) {
-  return (
-    <Link
-      href={href}
-      aria-label="Vivaahly home"
-      className={`inline-flex items-center gap-2.5 no-underline ${className}`}
-    >
+  const content = (
+    <>
       <Image
         src="/brand/vivaahly-mark.svg"
         alt=""
@@ -37,6 +33,27 @@ export function Brand({
           Vivaahly
         </span>
       ) : null}
+    </>
+  );
+
+  if (!href) {
+    return (
+      <span
+        aria-label="Vivaahly"
+        className={`inline-flex items-center gap-2.5 ${className}`}
+      >
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      aria-label="Vivaahly home"
+      className={`inline-flex items-center gap-2.5 no-underline ${className}`}
+    >
+      {content}
     </Link>
   );
 }

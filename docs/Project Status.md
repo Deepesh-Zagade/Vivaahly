@@ -523,6 +523,31 @@ Intentional limitations:
 - Personalized guest invitation delivery, resend/revoke operations, and the public `/i/[accessKey]` experience remain the next Guest vertical increment.
 - Per-event RSVP submission, response summaries, and RSVP filters remain the final planned Guest vertical increment.
 
+### 21. Guest invitation delivery and access management
+
+**Status:** Complete locally; QA deployment verification follows the `dev` push
+
+Delivered:
+
+- Added the organizer invitation hub with delivery summaries, search, status/type/ceremony filters, URL-backed pagination, cross-page eligible selection, recipient-level actions, and responsive loading states.
+- Added personalized email preview and Resend delivery with persisted campaigns, bounded batches, independent recipient outcomes, retry campaigns, progress recovery, and paginated campaign results supporting the full 1,000-recipient campaign limit.
+- Added missing-email correction, invitation revocation, restored access with private-key rotation, and clear organizer states for not sent, sent, failed, revoked, restored, missing-email, and missing-ceremony records.
+- Added the public `/i/[accessKey]` invitation experience, restricted to the recipient's currently active assigned ceremonies and protected by active invitation access.
+- Revalidated recipient eligibility immediately before provider delivery so a guest whose active ceremony assignments disappear after campaign preparation is not emailed while other valid recipients continue independently.
+- Added invitation-delivery schemas, services, MongoDB repository ownership, repeatable indexes, API routes, safe domain-error translation, email rendering and mail-provider boundaries, and navigation-state restoration between Invitations and Guest editing.
+- Updated the PRD, API design, and database design to document active-ceremony eligibility, immutable campaign history, recipient isolation, retry semantics, and revoked-link rotation.
+
+Verification:
+
+- User-led feature testing passed invitation creation, individual and bulk delivery, resend/retry, missing-email correction, revoke/restore, filters, pagination, selection persistence, campaign results, and responsive UI flows.
+- Manual QA and code review completed; the reported modal, navigation, invalid-campaign, send-time eligibility, safe-error, and campaign-recipient pagination defects were corrected.
+- Linting and type checking passed.
+- The complete automated suite passed with 187 tests across 45 files.
+
+Intentional limitations:
+
+- Guest RSVP submission without an account, per-event response capture, organizer RSVP summaries, and RSVP filters remain the final planned Guest vertical increment.
+
 ## Current Verification State
 
 At the completion of the initial Vercel production-deployment milestone:
@@ -545,6 +570,7 @@ At the completion of the initial Vercel production-deployment milestone:
 - The organizer invitation and membership-management implementation passed linting, type checking, and the complete 125-test suite across 28 files.
 - The Event Management implementation passed linting, type checking, and the complete 150-test suite across 34 files; code review and manual QA reported no remaining defects.
 - The Guest Directory increment passed type checking, focused linting, the complete 171-test suite across 41 files, and user-led local smoke testing of CRUD, event assignment, filters, pagination, loading, and state restoration.
+- The Guest Invitation Delivery increment passed linting, type checking, the complete 187-test suite across 45 files, user-led flow testing, Manual QA, and code review after its reported regressions were corrected.
 - The repeatable Atlas index command created the organizer invitation token, wedding/email/status, pending-email uniqueness, and expiration indexes successfully.
 - Live Resend email delivery and end-to-end browser QA passed for the organizer invitation lifecycle, including accepted, revoked, wrong-account, and unavailable-link states.
 - Linting passed.
@@ -570,7 +596,7 @@ Run the repository scripts again after future implementation changes; this secti
 
 ## Current Implementation Boundary
 
-The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, organizer membership management, the responsive organizer workspace/dashboard foundation, Wedding Event Management, and the organizer-facing Guest Directory with active-event assignment. Transactional email delivery for organizer invitations is implemented and live-verified through Resend; credentials remain environment-only and untracked. The application does not yet contain personalized guest invitation delivery or RSVP, tasks, vendors, expenses, media storage, or Media Hub access.
+The repository now proves the project foundation, finalized brand identity, marketing UI, organizer authentication boundary, Wedding tenant creation, authenticated tenant resolution, essential wedding-detail editing, organizer invitation/acceptance, organizer membership management, the responsive organizer workspace/dashboard foundation, Wedding Event Management, the organizer-facing Guest Directory with active-event assignment, and personalized guest invitation delivery with access-key rotation and ceremony-scoped public invitations. Transactional email delivery for organizer and guest invitations is implemented through Resend; credentials remain environment-only and untracked. The application does not yet contain guest RSVP submission and summaries, tasks, vendors, expenses, media storage, or Media Hub access.
 
 Production and QA deployment boundaries are now operational. The recommended next step is to run future feature and regression testing through `qa.vivaahly.bond`, promote only reviewed `dev` changes to `main`, and resume planning the next vertical product increment.
 

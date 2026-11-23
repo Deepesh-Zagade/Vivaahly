@@ -1061,6 +1061,7 @@ Example:
       lastSentAt: Date,
 
       revokedAt: null,
+      restoredAt: null,
 
       createdAt: Date,
       updatedAt: Date
@@ -1096,6 +1097,10 @@ An invitation can be revoked through:
     status = REVOKED
 
 without deleting its historical data.
+
+Restoring a revoked invitation changes it back to `ACTIVE`, rotates `accessKey`, records `restoredAt`, clears the prior send marker, and preserves all historical campaign and recipient records. Until the rotated link is delivered, the organizer-facing derived state is `RESTORED` (ready to send), not `SENT`. The old key must remain unusable after restoration.
+
+Email delivery additionally requires at least one ACTIVE guest-event invitation whose event is still ACTIVE. A zero-event guest record remains valid planning data but is not eligible for an invitation campaign.
 
 # 31. Guest Invitation Indexes
 
@@ -1895,6 +1900,8 @@ MongoDB never stores the binary media itself.
 
 Bulk guest invitation/reminder sending requires persisted campaign
 state.
+
+Recipient delivery results are independent even when the application processes them in one bounded batch. A provider rejection for one address must not overwrite the result of another recipient. Retrying failed recipients creates a new campaign with fresh current email snapshots; the original campaign remains immutable historical evidence.
 
 Example:
 
